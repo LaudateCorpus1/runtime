@@ -15,16 +15,15 @@ commands:
     cd release
     cmake -DCMAKE_BUILD_TYPE=Release ..
     cmake --build .
-  - ./build.sh -subset clr+libs+libs -a x64 -c release -ci -ninja
-  - cp unity/unitygc/release/libunitygc.so artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64/native
-  - artifacts/7za-linux-x64/7za a artifacts/unity/dotnet-runtime-unity-linux-x64.7z ./artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64
+  - docker run --rm -v /home/bokken/build/output/Unity-Technologies/runtime:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-20211215184859-538077f ./build.sh -subset clr+libs+libs -a x64 -c release -ci -ninja
+  - sudo cp unity/unitygc/release/libunitygc.so artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64/native
+  - sudo artifacts/7za-linux-x64/7za a artifacts/unity/dotnet-runtime-unity-linux-x64.7z ./artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64
 # build/run tests
-  - ./build.sh -subset libs.tests -test -a x64 -c release -ci -ninja
-  - command: ./src/tests/build.sh x64 release ci
-    retries: 1
-  - ./src/tests/run.sh x64 release
-  - ./build.sh clr.paltests
-  - ./artifacts/bin/coreclr/$(uname).x64.Debug/paltests/runpaltests.sh $(pwd)/artifacts/bin/coreclr/$(uname).x64.Debug/paltests
+  - docker run --rm -v /home/bokken/build/output/Unity-Technologies/runtime:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-20211215184859-538077f sudo ./build.sh -subset libs.tests -test -a x64 -c release -ci -ninja
+  - docker run --rm -v /home/bokken/build/output/Unity-Technologies/runtime:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-20211215184859-538077f sudo ./src/tests/build.sh x64 release ci
+  - docker run --rm -v /home/bokken/build/output/Unity-Technologies/runtime:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-20211215184859-538077f sudo ./src/tests/run.sh x64 release
+  - docker run --rm -v /home/bokken/build/output/Unity-Technologies/runtime:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-20211215184859-538077f sudo ./build.sh clr.paltests
+  - docker run --rm -v /home/bokken/build/output/Unity-Technologies/runtime:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-20211215184859-538077f sudo ./artifacts/bin/coreclr/$(uname).x64.Debug/paltests/runpaltests.sh $(pwd)/artifacts/bin/coreclr/$(uname).x64.Debug/paltests
 
 triggers:
   pull_requests:
