@@ -26,7 +26,7 @@ typedef void* mono_liveness_world_state_callback;
 
 //TODO: Use EXPORT_API instead of __declspec
 #ifdef WIN32
-#define DO_API(r,n,p)	extern "C" __declspec(dllexport) r n p;
+#define DO_API(r,n,p)	extern "C" __declspec(dllexport) r __cdecl n p;
 #else
 #define DO_API(r,n,p)	extern "C" r n p;
 #endif

@@ -2,19 +2,19 @@
 #include "MonoCoreClr.h"
 #include <coreclrhost.h>
 
-#include "assembly.hpp"
-#include "mscoree.h"
-#include "threads.h"
-#include "ecall.h"
-#include "stringliteralmap.h"
-#include "assemblynative.hpp"
-#include "typeparse.h"
-#include "typestring.h"
-#include "threadsuspend.h"
-#include "caparser.h"
 #include "../../gc/gcscan.h"
 #include "../../gc/objecthandle.h"
+#include "assembly.hpp"
+#include "assemblynative.hpp"
+#include "caparser.h"
+#include "ecall.h"
+#include "mscoree.h"
+#include "stringliteralmap.h"
 #include "threadlocalpoolallocator.h"
+#include "threads.h"
+#include "threadsuspend.h"
+#include "typeparse.h"
+#include "typestring.h"
 
 #ifdef FEATURE_PAL
 #include "pal.h"
@@ -26,9 +26,11 @@
 
 #ifdef WIN32
 #define EXPORT_API __declspec(dllexport)
+#define EXPORT_CC __cdecl
 #define PATH_SEPARATOR ';'
 #else
 #define EXPORT_API __attribute__((visibility("default")))
+#define EXPORT_CC 
 #define PATH_SEPARATOR ':'
 #endif
 
@@ -219,17 +221,17 @@ MonoString* InvokeFindPluginCallback(MonoString* path)
     return NULL;
 }
 
-#define DO_API(ret,name,sig) extern "C" EXPORT_API ret name sig { ASSERT_NOT_IMPLEMENTED; }
-#define DO_API_RET(ret,name,sig) extern "C" EXPORT_API ret name sig { ASSERT_NOT_IMPLEMENTED; return 0; }
+#define DO_API(ret,name,sig) extern "C" EXPORT_API ret EXPORT_CC EXPORT_CC name sig { ASSERT_NOT_IMPLEMENTED; }
+#define DO_API_RET(ret,name,sig) extern "C" EXPORT_API ret EXPORT_CC EXPORT_CC name sig { ASSERT_NOT_IMPLEMENTED; return 0; }
 
-extern "C" EXPORT_API int coreclr_array_length(MonoArray* array)
+extern "C" EXPORT_API int EXPORT_CC EXPORT_CC coreclr_array_length(MonoArray* array)
 {
     ArrayBase* arrayObj = (ArrayBase*)array;
 
     return arrayObj->GetNumComponents();
 }
 
-extern "C" EXPORT_API MonoClass* coreclr_class_from_systemtypeinstance (MonoObject* systemTypeInstance)
+extern "C" EXPORT_API MonoClass* EXPORT_CC EXPORT_CC coreclr_class_from_systemtypeinstance (MonoObject* systemTypeInstance)
 {
     ReflectClassBaseObject* refClass = (ReflectClassBaseObject*)systemTypeInstance;
     {
@@ -238,7 +240,7 @@ extern "C" EXPORT_API MonoClass* coreclr_class_from_systemtypeinstance (MonoObje
     }
 }
 
-extern "C" EXPORT_API void mono_add_internal_call(const char *name, gconstpointer method)
+extern "C" EXPORT_API void EXPORT_CC mono_add_internal_call(const char *name, gconstpointer method)
 {
     TRACE_API("%s, %p", name, method);
 
@@ -248,13 +250,13 @@ extern "C" EXPORT_API void mono_add_internal_call(const char *name, gconstpointe
     ECall::RegisterICall(name, (PCODE)method);
 }
 
-extern "C" EXPORT_API char* mono_array_addr_with_size(MonoArray *array, int size, uintptr_t idx)
+extern "C" EXPORT_API char* EXPORT_CC mono_array_addr_with_size(MonoArray *array, int size, uintptr_t idx)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API MonoClass* mono_array_class_get(MonoClass *eclass, guint32 rank)
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_array_class_get(MonoClass *eclass, guint32 rank)
 {
     CONTRACTL{
         STANDARD_VM_CHECK;
@@ -272,7 +274,7 @@ extern "C" EXPORT_API MonoClass* mono_array_class_get(MonoClass *eclass, guint32
     return (MonoClass*)arrayMT.GetMethodTable();
 }
 
-extern "C" EXPORT_API int mono_array_element_size(MonoClass* classOfArray)
+extern "C" EXPORT_API int EXPORT_CC mono_array_element_size(MonoClass* classOfArray)
 {
     CONTRACTL
     {
@@ -285,7 +287,7 @@ extern "C" EXPORT_API int mono_array_element_size(MonoClass* classOfArray)
     return reinterpret_cast<MonoClass_clr*>(classOfArray)->GetArrayElementTypeHandle().GetSize();
 }
 
-extern "C" EXPORT_API MonoArray* mono_array_new(MonoDomain *domain, MonoClass *eclass, guint32 n)
+extern "C" EXPORT_API MonoArray* EXPORT_CC mono_array_new(MonoDomain *domain, MonoClass *eclass, guint32 n)
 {
     CONTRACTL{
         THROWS;
@@ -309,7 +311,7 @@ DO_API_RET(gboolean, mono_assembly_fill_assembly_name, (MonoImage * image, MonoA
 
 DO_API(void, mono_assembly_foreach, (GFunc func, gpointer user_data))
 
-extern "C" EXPORT_API MonoImage* mono_assembly_get_image(MonoAssembly *assembly)
+extern "C" EXPORT_API MonoImage* EXPORT_CC mono_assembly_get_image(MonoAssembly *assembly)
 {
     TRACE_API("%p", assembly);
     CONTRACTL
@@ -324,26 +326,26 @@ extern "C" EXPORT_API MonoImage* mono_assembly_get_image(MonoAssembly *assembly)
     return (MonoImage*)assembly;
 }
 
-extern "C" EXPORT_API MonoObject* mono_assembly_get_object(MonoDomain *domain, MonoAssembly *assembly)
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_assembly_get_object(MonoDomain *domain, MonoAssembly *assembly)
 {
     FCALL_CONTRACT;
     GCX_COOP();
     return (MonoObject*)OBJECTREFToObject(reinterpret_cast<MonoImage_clr*>(assembly)->GetExposedObject());
 }
 
-extern "C" EXPORT_API MonoAssembly* mono_assembly_load_from(MonoImage *image, const char*fname, int *status)
+extern "C" EXPORT_API MonoAssembly* EXPORT_CC mono_assembly_load_from(MonoImage *image, const char*fname, int *status)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API MonoAssembly* mono_assembly_load_from_full(MonoImage *image, const char *fname, int *status, gboolean refonly)
+extern "C" EXPORT_API MonoAssembly* EXPORT_CC mono_assembly_load_from_full(MonoImage *image, const char *fname, int *status, gboolean refonly)
 {
     // TODO: As we are making MonoImage == MonoAssembly, return it as-is
     return (MonoAssembly*)image;
 }
 
-extern "C" EXPORT_API MonoAssembly* mono_assembly_loaded(MonoAssemblyName *aname)
+extern "C" EXPORT_API MonoAssembly* EXPORT_CC mono_assembly_loaded(MonoAssemblyName *aname)
 {
     TRACE_API("%p", aname);
 
@@ -362,25 +364,25 @@ extern "C" EXPORT_API MonoAssembly* mono_assembly_loaded(MonoAssemblyName *aname
     return NULL;
 }
 
-extern "C" EXPORT_API void mono_assembly_name_free (MonoAssemblyName * assembly)
+extern "C" EXPORT_API void EXPORT_CC mono_assembly_name_free (MonoAssemblyName * assembly)
 {
     free((void*)assembly->name);
     assembly->name = NULL;
 }
 
-extern "C" EXPORT_API int mono_assembly_name_parse(const char* name, MonoAssemblyName *assembly)
+extern "C" EXPORT_API int EXPORT_CC mono_assembly_name_parse(const char* name, MonoAssemblyName *assembly)
 {
     assembly->name = _strdup(name);
     return 1;
 }
 
-extern "C" EXPORT_API MonoAssembly* mono_assembly_open(const char *filename, int *status)
+extern "C" EXPORT_API MonoAssembly* EXPORT_CC mono_assembly_open(const char *filename, int *status)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API gint32 mono_class_array_element_size(MonoClass *ac)
+extern "C" EXPORT_API gint32 EXPORT_CC mono_class_array_element_size(MonoClass *ac)
 {
     CONTRACTL{
         STANDARD_VM_CHECK;
@@ -393,7 +395,7 @@ extern "C" EXPORT_API gint32 mono_class_array_element_size(MonoClass *ac)
     return s;
 }
 
-extern "C" EXPORT_API MonoType* mono_class_enum_basetype(MonoClass *klass)
+extern "C" EXPORT_API MonoType* EXPORT_CC mono_class_enum_basetype(MonoClass *klass)
 {
     // the type loading path now can throw exceptions and trigger GC so comment out for now
         CONTRACTL
@@ -426,7 +428,7 @@ extern "C" EXPORT_API MonoType* mono_class_enum_basetype(MonoClass *klass)
     }
 }
 
-extern "C" EXPORT_API MonoClass* mono_class_from_mono_type(MonoType *image)
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_from_mono_type(MonoType *image)
 {
     MonoClass_clr* klass = MonoType_clr_from_MonoType(image).GetMethodTable();
     return (MonoClass*)klass;
@@ -463,21 +465,21 @@ MonoClass * mono_class_from_name(MonoImage *image, const char* name_space, const
     return NULL;
 }
 
-extern "C" EXPORT_API MonoClass * mono_class_from_name(MonoImage *image, const char* name_space, const char *name)
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_from_name(MonoImage *image, const char* name_space, const char *name)
 {
     TRACE_API("%x, %s, %s", image, name_space, name);
 
     return mono_class_from_name(image, name_space, name, false);
 }
 
-extern "C" EXPORT_API MonoClass * mono_class_from_name_case(MonoImage *image, const char* name_space, const char *name)
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_from_name_case(MonoImage *image, const char* name_space, const char *name)
 {
     TRACE_API("%x, %s, %s", image, name_space, name);
 
     return mono_class_from_name(image, name_space, name, true);
 }
 
-extern "C" EXPORT_API MonoClass* mono_class_get(MonoImage *image, guint32 type_token)
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get(MonoImage *image, guint32 type_token)
 {
     TRACE_API("%p, %x", image, type_token);
 
@@ -486,13 +488,13 @@ extern "C" EXPORT_API MonoClass* mono_class_get(MonoImage *image, guint32 type_t
     return (MonoClass*)klass;
 }
 
-extern "C" EXPORT_API MonoType* mono_class_get_byref_type(MonoClass *klass)
+extern "C" EXPORT_API MonoType* EXPORT_CC mono_class_get_byref_type(MonoClass *klass)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API MonoClass* mono_class_get_element_class(MonoClass *klass)
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_element_class(MonoClass *klass)
 {
     CONTRACTL
     {
@@ -505,7 +507,7 @@ extern "C" EXPORT_API MonoClass* mono_class_get_element_class(MonoClass *klass)
     return (MonoClass*)reinterpret_cast<MonoClass_clr*>(klass)->GetArrayElementTypeHandle().GetMethodTable();
 }
 
-extern "C" EXPORT_API MonoClassField* mono_class_get_field_from_name(MonoClass *klass, const char *name)
+extern "C" EXPORT_API MonoClassField* EXPORT_CC mono_class_get_field_from_name(MonoClass *klass, const char *name)
 {
     CONTRACTL
     {
@@ -532,7 +534,7 @@ extern "C" EXPORT_API MonoClassField* mono_class_get_field_from_name(MonoClass *
 
 thread_local ThreadLocalPoolAllocator<ApproxFieldDescIterator,5> g_ApproxFieldDescIteratorAlloc;
 
-extern "C" EXPORT_API MonoClassField* mono_class_get_fields(MonoClass* klass, gpointer *iter)
+extern "C" EXPORT_API MonoClassField* EXPORT_CC mono_class_get_fields(MonoClass* klass, gpointer *iter)
 {
     TRACE_API("%p, %p", klass, iter);
 
@@ -569,7 +571,7 @@ extern "C" EXPORT_API MonoClassField* mono_class_get_fields(MonoClass* klass, gp
     return (MonoClassField*)nextField;
 }
 
-extern "C" EXPORT_API guint32 mono_class_get_flags(MonoClass *klass)
+extern "C" EXPORT_API guint32 EXPORT_CC mono_class_get_flags(MonoClass *klass)
 {
     MonoClass_clr* clrClass = reinterpret_cast<MonoClass_clr*>(klass);
     mdTypeDef token = clrClass->GetCl();
@@ -579,7 +581,7 @@ extern "C" EXPORT_API guint32 mono_class_get_flags(MonoClass *klass)
     return dwClassAttrs;
 }
 
-extern "C" EXPORT_API MonoImage* mono_class_get_image(MonoClass *klass)
+extern "C" EXPORT_API MonoImage* EXPORT_CC mono_class_get_image(MonoClass *klass)
 {
     MonoClass_clr* classClr = (MonoClass_clr*)klass;
 
@@ -597,7 +599,7 @@ struct MethodTable_InterfaceMapIteratorWrapper
     }
 };
 
-extern "C" EXPORT_API MonoClass* mono_class_get_interfaces(MonoClass* klass, gpointer *iter)
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_interfaces(MonoClass* klass, gpointer *iter)
 {
     TRACE_API("%p, %p", klass, iter);
 
@@ -633,7 +635,7 @@ extern "C" EXPORT_API MonoClass* mono_class_get_interfaces(MonoClass* klass, gpo
     return (MonoClass*)iterator->iter.GetInterfaceApprox();
 }
 
-extern "C" EXPORT_API MonoMethod* mono_class_get_method_from_name(MonoClass *klass, const char *name, int param_count)
+extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_class_get_method_from_name(MonoClass *klass, const char *name, int param_count)
 {
     CONTRACTL
     {
@@ -671,7 +673,7 @@ extern "C" EXPORT_API MonoMethod* mono_class_get_method_from_name(MonoClass *kla
     return NULL;
 }
 
-extern "C" EXPORT_API MonoMethod* mono_class_get_methods(MonoClass* klass, gpointer *iter)
+extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_class_get_methods(MonoClass* klass, gpointer *iter)
 {
     TRACE_API("%p, %p", klass, iter);
 
@@ -711,7 +713,7 @@ extern "C" EXPORT_API MonoMethod* mono_class_get_methods(MonoClass* klass, gpoin
     return (MonoMethod*)method;
 }
 
-extern "C" EXPORT_API const char* mono_class_get_name(MonoClass *klass)
+extern "C" EXPORT_API const char* EXPORT_CC mono_class_get_name(MonoClass *klass)
 {
 	MonoClass_clr* clazz = (MonoClass_clr*)klass;
     if (clazz->IsArray())
@@ -740,7 +742,7 @@ extern "C" EXPORT_API const char* mono_class_get_name(MonoClass *klass)
     return name;
 }
 
-extern "C" EXPORT_API const char* mono_class_get_namespace(MonoClass *klass)
+extern "C" EXPORT_API const char* EXPORT_CC mono_class_get_namespace(MonoClass *klass)
 {
 	MonoClass_clr* clazz = (MonoClass_clr*)klass;
 	LPCUTF8 name, namespaze;
@@ -748,7 +750,7 @@ extern "C" EXPORT_API const char* mono_class_get_namespace(MonoClass *klass)
     return namespaze;
 }
 
-extern "C" EXPORT_API MonoClass* mono_class_get_nested_types(MonoClass* klass, gpointer *iter)
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_nested_types(MonoClass* klass, gpointer *iter)
 {
     TRACE_API("%p, %p", klass, iter);
 
@@ -810,7 +812,7 @@ extern "C" EXPORT_API MonoClass* mono_class_get_nested_types(MonoClass* klass, g
     return NULL;
 }
 
-extern "C" EXPORT_API MonoClass* mono_class_get_nesting_type(MonoClass *klass)
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_nesting_type(MonoClass *klass)
 {
     MonoClass_clr* klass_clr = (MonoClass_clr*)klass;
     if (!klass_clr->GetClass()->IsNested())
@@ -821,19 +823,19 @@ extern "C" EXPORT_API MonoClass* mono_class_get_nesting_type(MonoClass *klass)
     return (MonoClass*)ret;
 }
 
-extern "C" EXPORT_API MonoClass* mono_class_get_parent(MonoClass *klass)
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_parent(MonoClass *klass)
 {
     MonoClass_clr* parent = reinterpret_cast<MonoClass_clr*>(klass)->GetParentMethodTable();
     return (MonoClass*)parent;
 }
 
-extern "C" EXPORT_API MonoProperty* mono_class_get_properties(MonoClass* klass, gpointer *iter)
+extern "C" EXPORT_API MonoProperty* EXPORT_CC mono_class_get_properties(MonoClass* klass, gpointer *iter)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API MonoProperty* mono_class_get_property_from_name(MonoClass *klass, const char *name)
+extern "C" EXPORT_API MonoProperty* EXPORT_CC mono_class_get_property_from_name(MonoClass *klass, const char *name)
 {
     // CoreCLR does not have easy support for iterating on properties on a MethodTable.
     // So instead, we look for the property's "get" method. This will not work for set-only 
@@ -844,7 +846,7 @@ extern "C" EXPORT_API MonoProperty* mono_class_get_property_from_name(MonoClass 
     return (MonoProperty*)mono_class_get_method_from_name(klass, propertyName.GetUTF8(buffer), 0);
 }
 
-extern "C" EXPORT_API int mono_class_get_rank(MonoClass *klass)
+extern "C" EXPORT_API int EXPORT_CC mono_class_get_rank(MonoClass *klass)
 {
     CONTRACTL
     {
@@ -859,18 +861,18 @@ extern "C" EXPORT_API int mono_class_get_rank(MonoClass *klass)
     return klass_clr->IsArray() ? klass_clr->GetRank() : 0;
 }
 
-extern "C" EXPORT_API MonoType* mono_class_get_type(MonoClass *klass)
+extern "C" EXPORT_API MonoType* EXPORT_CC mono_class_get_type(MonoClass *klass)
 {
     TypeHandle h(reinterpret_cast<MonoClass_clr*>(klass));
     return (MonoType*)h.AsPtr();
 }
 
-extern "C" EXPORT_API guint32 mono_class_get_type_token(MonoClass *klass)
+extern "C" EXPORT_API guint32 EXPORT_CC mono_class_get_type_token(MonoClass *klass)
 {
     return (guint32)reinterpret_cast<MonoClass_clr*>(klass)->GetTypeID();
 }
 
-extern "C" EXPORT_API void* mono_class_get_userdata(MonoClass* klass)
+extern "C" EXPORT_API void* EXPORT_CC mono_class_get_userdata(MonoClass* klass)
 {
     TRACE_API("%p", klass);
 
@@ -885,7 +887,7 @@ extern "C" EXPORT_API void* mono_class_get_userdata(MonoClass* klass)
     return ((MonoClass_clr*)klass)->m_pUserData;
 }
 
-extern "C" EXPORT_API int mono_class_get_userdata_offset()
+extern "C" EXPORT_API int EXPORT_CC mono_class_get_userdata_offset()
 {
     //TRACE_API("", NULL);
 
@@ -899,23 +901,23 @@ extern "C" EXPORT_API int mono_class_get_userdata_offset()
     return offsetof(MethodTable, m_pUserData);
 }
 
-extern "C" EXPORT_API gint32 mono_class_instance_size(MonoClass *klass)
+extern "C" EXPORT_API gint32 EXPORT_CC mono_class_instance_size(MonoClass *klass)
 {
     return (guint32)reinterpret_cast<MonoClass_clr*>(klass)->GetNumInstanceFieldBytes() + sizeof(void*);
 }
 
-extern "C" EXPORT_API gboolean mono_class_is_blittable(MonoClass * klass)
+extern "C" EXPORT_API gboolean EXPORT_CC mono_class_is_blittable(MonoClass * klass)
 {
     MonoClass_clr* klass_clr = (MonoClass_clr*)klass;
     return klass_clr->IsBlittable();
 }
 
-extern "C" EXPORT_API gboolean mono_class_is_enum(MonoClass *klass)
+extern "C" EXPORT_API gboolean EXPORT_CC mono_class_is_enum(MonoClass *klass)
 {
     return (gboolean)reinterpret_cast<MonoClass_clr*>(klass)->IsEnum() ? TRUE : FALSE;
 }
 
-extern "C" EXPORT_API gboolean mono_class_is_generic(MonoClass* klass)
+extern "C" EXPORT_API gboolean EXPORT_CC mono_class_is_generic(MonoClass* klass)
 {
     CONTRACTL{
         PRECONDITION(klass != nullptr);
@@ -924,7 +926,7 @@ extern "C" EXPORT_API gboolean mono_class_is_generic(MonoClass* klass)
     return klass_clr->IsGenericTypeDefinition() ? TRUE : FALSE;
 }
 
-extern "C" EXPORT_API gboolean mono_class_is_inflated(MonoClass* klass)
+extern "C" EXPORT_API gboolean EXPORT_CC mono_class_is_inflated(MonoClass* klass)
 {
     CONTRACTL{
         PRECONDITION(klass != nullptr);
@@ -937,7 +939,7 @@ extern "C" EXPORT_API gboolean mono_class_is_inflated(MonoClass* klass)
     return isgeneric ? TRUE : FALSE;
 }
 
-extern "C" EXPORT_API gboolean mono_class_is_subclass_of(MonoClass *klass, MonoClass *klassc, gboolean check_interfaces)
+extern "C" EXPORT_API gboolean EXPORT_CC mono_class_is_subclass_of(MonoClass *klass, MonoClass *klassc, gboolean check_interfaces)
 {
     MonoClass_clr* clazz = (MonoClass_clr*)klass;
     MonoClass_clr* clazzc = (MonoClass_clr*)klassc;
@@ -963,13 +965,13 @@ extern "C" EXPORT_API gboolean mono_class_is_subclass_of(MonoClass *klass, MonoC
     return FALSE;
 }
 
-extern "C" EXPORT_API gboolean mono_class_is_valuetype(MonoClass *klass)
+extern "C" EXPORT_API gboolean EXPORT_CC mono_class_is_valuetype(MonoClass *klass)
 {
     MonoClass_clr* clazz = (MonoClass_clr*)klass;
     return (gboolean)clazz->IsValueType()? TRUE : FALSE;
 }
 
-extern "C" EXPORT_API void mono_class_set_userdata(MonoClass* klass, void* userdata)
+extern "C" EXPORT_API void EXPORT_CC mono_class_set_userdata(MonoClass* klass, void* userdata)
 {
     TRACE_API("%p, %p", klass, userdata);
 
@@ -984,13 +986,13 @@ extern "C" EXPORT_API void mono_class_set_userdata(MonoClass* klass, void* userd
     ((MonoClass_clr*)klass)->m_pUserData = userdata;
 }
 
-extern "C" EXPORT_API MonoVTable* mono_class_vtable(MonoDomain *domain, MonoClass *klass)
+extern "C" EXPORT_API MonoVTable* EXPORT_CC mono_class_vtable(MonoDomain *domain, MonoClass *klass)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API void mono_config_parse(const char *filename)
+extern "C" EXPORT_API void EXPORT_CC mono_config_parse(const char *filename)
 {
     // NOP
 }
@@ -1151,7 +1153,7 @@ MonoObject* CreateAttributeInstance(MonoCustomAttrInfo_clr* attributes, mdCustom
 }
 
 
-extern "C" EXPORT_API MonoArray* mono_custom_attrs_construct(MonoCustomAttrInfo *ainfo)
+extern "C" EXPORT_API MonoArray* EXPORT_CC mono_custom_attrs_construct(MonoCustomAttrInfo *ainfo)
 {
     MonoCustomAttrInfo_clr* attributes = reinterpret_cast<MonoCustomAttrInfo_clr*>(ainfo);
     HENUMInternal iterator;
@@ -1172,12 +1174,12 @@ extern "C" EXPORT_API MonoArray* mono_custom_attrs_construct(MonoCustomAttrInfo 
 
 thread_local ThreadLocalPoolAllocator<MonoCustomAttrInfo_clr,5> g_AttributeInfoAlloc;
 
-extern "C" EXPORT_API void mono_custom_attrs_free(MonoCustomAttrInfo* attr)
+extern "C" EXPORT_API void EXPORT_CC mono_custom_attrs_free(MonoCustomAttrInfo* attr)
 {
     g_AttributeInfoAlloc.Free((MonoCustomAttrInfo_clr*)attr);
 }
 
-extern "C" EXPORT_API MonoCustomAttrInfo* mono_custom_attrs_from_assembly(MonoAssembly *assembly)
+extern "C" EXPORT_API MonoCustomAttrInfo* EXPORT_CC mono_custom_attrs_from_assembly(MonoAssembly *assembly)
 {
     TRACE_API("%p", assembly);
     MonoCustomAttrInfo_clr *aInfo = g_AttributeInfoAlloc.Alloc();
@@ -1188,7 +1190,7 @@ extern "C" EXPORT_API MonoCustomAttrInfo* mono_custom_attrs_from_assembly(MonoAs
     return (MonoCustomAttrInfo*)aInfo;
 }
 
-extern "C" EXPORT_API MonoCustomAttrInfo* mono_custom_attrs_from_class(MonoClass *klass)
+extern "C" EXPORT_API MonoCustomAttrInfo* EXPORT_CC mono_custom_attrs_from_class(MonoClass *klass)
 {
     TRACE_API("%p", klass);
     MonoClass_clr* clrClass = reinterpret_cast<MonoClass_clr*>(klass);
@@ -1199,7 +1201,7 @@ extern "C" EXPORT_API MonoCustomAttrInfo* mono_custom_attrs_from_class(MonoClass
     return (MonoCustomAttrInfo*)aInfo;
 }
 
-extern "C" EXPORT_API MonoCustomAttrInfo* mono_custom_attrs_from_field(MonoClass *klass, MonoClassField *field)
+extern "C" EXPORT_API MonoCustomAttrInfo* EXPORT_CC mono_custom_attrs_from_field(MonoClass *klass, MonoClassField *field)
 {
     TRACE_API("%p, %p", klass, field);
     FieldDesc* clrFieldDesc = reinterpret_cast<FieldDesc*>(field);
@@ -1210,7 +1212,7 @@ extern "C" EXPORT_API MonoCustomAttrInfo* mono_custom_attrs_from_field(MonoClass
     return (MonoCustomAttrInfo*)aInfo;
 }
 
-extern "C" EXPORT_API MonoCustomAttrInfo* mono_custom_attrs_from_method(MonoMethod *method)
+extern "C" EXPORT_API MonoCustomAttrInfo* EXPORT_CC mono_custom_attrs_from_method(MonoMethod *method)
 {
     TRACE_API("%p", method);
     MonoMethod_clr* clrMethod = reinterpret_cast<MonoMethod_clr*>(method);
@@ -1223,7 +1225,7 @@ extern "C" EXPORT_API MonoCustomAttrInfo* mono_custom_attrs_from_method(MonoMeth
 
 DO_API_RET(MonoCustomAttrInfo*, mono_custom_attrs_from_property, (MonoClass * klass, MonoProperty * property))
 
-extern "C" EXPORT_API MonoObject* mono_custom_attrs_get_attr(MonoCustomAttrInfo *ainfo, MonoClass *requested_klass)
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_custom_attrs_get_attr(MonoCustomAttrInfo *ainfo, MonoClass *requested_klass)
 {
     TRACE_API("%p, %p", ainfo, attr_klass);
     MonoCustomAttrInfo_clr* attributes = reinterpret_cast<MonoCustomAttrInfo_clr*>(ainfo);
@@ -1262,7 +1264,7 @@ extern "C" EXPORT_API MonoObject* mono_custom_attrs_get_attr(MonoCustomAttrInfo 
     return NULL;
 }
 
-extern "C" EXPORT_API MonoClass* mono_custom_attrs_get_attrs (MonoCustomAttrInfo * ainfo, void** iterator)
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_custom_attrs_get_attrs (MonoCustomAttrInfo * ainfo, void** iterator)
 {
     TRACE_API("%p, %p", ainfo, iterator);
 
@@ -1305,7 +1307,7 @@ extern "C" EXPORT_API MonoClass* mono_custom_attrs_get_attrs (MonoCustomAttrInfo
     return NULL;
 }
 
-extern "C" EXPORT_API gboolean mono_custom_attrs_has_attr(MonoCustomAttrInfo *ainfo, MonoClass *attr_klass)
+extern "C" EXPORT_API gboolean EXPORT_CC mono_custom_attrs_has_attr(MonoCustomAttrInfo *ainfo, MonoClass *attr_klass)
 {
     TRACE_API("%p, %p", ainfo, attr_klass);
     MonoCustomAttrInfo_clr* attributes = reinterpret_cast<MonoCustomAttrInfo_clr*>(ainfo);
@@ -1370,22 +1372,22 @@ extern "C" EXPORT_API gboolean mono_custom_attrs_has_attr(MonoCustomAttrInfo *ai
     return found;
 }
 
-extern "C" EXPORT_API void mono_debug_free_source_location(MonoDebugSourceLocation* location)
+extern "C" EXPORT_API void EXPORT_CC mono_debug_free_source_location(MonoDebugSourceLocation* location)
 {
 }
 
-extern "C" EXPORT_API void mono_debug_init(int format)
+extern "C" EXPORT_API void EXPORT_CC mono_debug_init(int format)
 {
     // NOP
 }
 
-extern "C" EXPORT_API MonoDebugSourceLocation* mono_debug_lookup_source_location(MonoMethod* method, guint32 address, MonoDomain* domain)
+extern "C" EXPORT_API MonoDebugSourceLocation* EXPORT_CC mono_debug_lookup_source_location(MonoMethod* method, guint32 address, MonoDomain* domain)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API void mono_debug_open_image_from_memory(MonoImage *image, const char *raw_contents, int size)
+extern "C" EXPORT_API void EXPORT_CC mono_debug_open_image_from_memory(MonoImage *image, const char *raw_contents, int size)
 {
     // NOP
 }
@@ -1395,12 +1397,12 @@ typedef void* (*MonoDlFallbackLoad) (const char *name, int flags, char **err, vo
 typedef void* (*MonoDlFallbackSymbol) (void *handle, const char *name, char **err, void *user_data);
 typedef void* (*MonoDlFallbackClose) (void *handle, void *user_data);
 
-extern "C" EXPORT_API MonoDlFallbackHandler* mono_dl_fallback_register(MonoDlFallbackLoad load_func, MonoDlFallbackSymbol symbol_func, MonoDlFallbackClose close_func, void *user_data)
+extern "C" EXPORT_API MonoDlFallbackHandler* EXPORT_CC mono_dl_fallback_register(MonoDlFallbackLoad load_func, MonoDlFallbackSymbol symbol_func, MonoDlFallbackClose close_func, void *user_data)
 {
     return NULL;
 }
 
-extern "C" EXPORT_API void mono_dl_fallback_unregister(MonoDlFallbackHandler *handler)
+extern "C" EXPORT_API void EXPORT_CC mono_dl_fallback_unregister(MonoDlFallbackHandler *handler)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
@@ -1428,7 +1430,8 @@ struct LoadedImage{
 };
 SArray<LoadedImage> *g_LoadedImages = NULL;
 
-extern "C" EXPORT_API MonoAssembly * mono_domain_assembly_open(MonoDomain *domain, const char *name)
+
+extern "C" EXPORT_API MonoAssembly* EXPORT_CC mono_domain_assembly_open(MonoDomain *domain, const char *name)
 {
     TRACE_API("%x, %s", domain, name);
 
@@ -1447,13 +1450,13 @@ extern "C" EXPORT_API MonoAssembly * mono_domain_assembly_open(MonoDomain *domai
     return (MonoAssembly*)assembly;
 }
 
-extern "C" EXPORT_API MonoDomain * mono_domain_create_appdomain(const char *domainname, const char* configfile)
+extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_domain_create_appdomain(const char *domainname, const char* configfile)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API gboolean mono_domain_finalize(MonoDomain *domain, int timeout)
+extern "C" EXPORT_API gboolean EXPORT_CC mono_domain_finalize(MonoDomain *domain, int timeout)
 {
     TRACE_API("%p, %d", domain, timeout);
 
@@ -1461,26 +1464,26 @@ extern "C" EXPORT_API gboolean mono_domain_finalize(MonoDomain *domain, int time
     return TRUE;
 }
 
-extern "C" EXPORT_API MonoDomain* mono_domain_get()
+extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_domain_get()
 {
     TRACE_API("", NULL);
     return GetThreadNULLOk() != NULL ? gCurrentDomain : NULL;
 }
 
-extern "C" EXPORT_API gint32 mono_domain_get_id(MonoDomain *domain)
+extern "C" EXPORT_API gint32 EXPORT_CC mono_domain_get_id(MonoDomain *domain)
 {
     TRACE_API("", NULL);
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API gboolean mono_domain_set(MonoDomain *domain, gboolean force)
+extern "C" EXPORT_API gboolean EXPORT_CC mono_domain_set(MonoDomain *domain, gboolean force)
 {
     gCurrentDomain = domain;
     return true;
 }
 
-extern "C" EXPORT_API void mono_domain_unload(MonoDomain* domain)
+extern "C" EXPORT_API void EXPORT_CC mono_domain_unload(MonoDomain* domain)
 {
     TRACE_API("%p", domain);
     
@@ -1511,7 +1514,7 @@ static_assert(sizeof(MonoInternalCallFrame) <= sizeof(MonoInternalCallFrameOpaqu
 // small icalls (like Profiler.BeginSample). In most cases we can run icalls without wrapping them,
 // but it is not generally safe to do so. So we need to find a solution to selectively wrap icalls
 // only where needed.
-extern "C" EXPORT_API void mono_enter_internal_call(MonoInternalCallFrameOpaque *_frame)
+extern "C" EXPORT_API void EXPORT_CC mono_enter_internal_call(MonoInternalCallFrameOpaque *_frame)
 {
     TRACE_API("%x", _frame);
 
@@ -1541,7 +1544,7 @@ extern "C" EXPORT_API void mono_enter_internal_call(MonoInternalCallFrameOpaque 
     }
 }
 
-extern "C" EXPORT_API MonoException * mono_exception_from_name_msg(MonoImage *image, const char *name_space, const char *name, const char *msg)
+extern "C" EXPORT_API MonoException* EXPORT_CC mono_exception_from_name_msg(MonoImage *image, const char *name_space, const char *name, const char *msg)
 {
     SString sstr(SString::Utf8, msg);
     GCX_COOP();
@@ -1551,13 +1554,13 @@ extern "C" EXPORT_API MonoException * mono_exception_from_name_msg(MonoImage *im
     return (MonoException*)exobj;
 }
 
-extern "C" EXPORT_API MonoException * mono_exception_from_name_two_strings(MonoImage *image, const char *name_space, const char *name, const char *msg1, const char *msg2)
+extern "C" EXPORT_API MonoException* EXPORT_CC mono_exception_from_name_two_strings(MonoImage *image, const char *name_space, const char *name, const char *msg1, const char *msg2)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API void mono_exit_internal_call(MonoInternalCallFrameOpaque *_frame)
+extern "C" EXPORT_API void EXPORT_CC mono_exit_internal_call(MonoInternalCallFrameOpaque *_frame)
 {
     TRACE_API("%x", _frame);
 
@@ -1573,12 +1576,12 @@ extern "C" EXPORT_API void mono_exit_internal_call(MonoInternalCallFrameOpaque *
 
 DO_API_RET(MonoClassField* , mono_field_from_token, (MonoImage * image, uint32_t token, MonoClass** retklass, MonoGenericContext * context))
 
-extern "C" EXPORT_API guint32 mono_field_get_flags(MonoClassField *field)
+extern "C" EXPORT_API guint32 EXPORT_CC mono_field_get_flags(MonoClassField *field)
 {
     return ((FieldDesc*)field)->GetAttributes();
 }
 
-extern "C" EXPORT_API const char* mono_field_get_name(MonoClassField *field)
+extern "C" EXPORT_API const char* EXPORT_CC mono_field_get_name(MonoClassField *field)
 {
     CONTRACTL
     {
@@ -1593,7 +1596,7 @@ extern "C" EXPORT_API const char* mono_field_get_name(MonoClassField *field)
 
 DO_API_RET(MonoReflectionField*, mono_field_get_object, (MonoDomain * domain, MonoClass * klass, MonoClassField * field))
 
-extern "C" EXPORT_API int mono_field_get_offset(MonoClassField *field)
+extern "C" EXPORT_API int EXPORT_CC mono_field_get_offset(MonoClassField *field)
 {
     TRACE_API("%p", field);
 
@@ -1609,13 +1612,13 @@ extern "C" EXPORT_API int mono_field_get_offset(MonoClassField *field)
     return result;
 }
 
-extern "C" EXPORT_API MonoClass* mono_field_get_parent(MonoClassField *field)
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_field_get_parent(MonoClassField *field)
 {
     FieldDesc* fieldDesc = (FieldDesc*)field;
     return (MonoClass*)fieldDesc->GetApproxEnclosingMethodTable();
 }
 
-extern "C" EXPORT_API MonoType* mono_field_get_type(MonoClassField *field)
+extern "C" EXPORT_API MonoType* EXPORT_CC mono_field_get_type(MonoClassField *field)
 {
     CONTRACTL
     {
@@ -1630,7 +1633,7 @@ extern "C" EXPORT_API MonoType* mono_field_get_type(MonoClassField *field)
     return MonoType_clr_to_MonoType(typeHandle);
 }
 
-extern "C" EXPORT_API MonoType* mono_field_get_type_specific(MonoClassField *field, MonoClass* owner)
+extern "C" EXPORT_API MonoType* EXPORT_CC mono_field_get_type_specific(MonoClassField *field, MonoClass* owner)
 {
     CONTRACTL
     {
@@ -1646,7 +1649,7 @@ extern "C" EXPORT_API MonoType* mono_field_get_type_specific(MonoClassField *fie
     return MonoType_clr_to_MonoType(typeHandle);
 }
 
-extern "C" EXPORT_API void mono_field_get_value(MonoObject *obj, MonoClassField *field, void *value)
+extern "C" EXPORT_API void EXPORT_CC mono_field_get_value(MonoObject *obj, MonoClassField *field, void *value)
 {
     TRACE_API("%p, %p, %p", obj, field, value);
 
@@ -1662,7 +1665,7 @@ extern "C" EXPORT_API void mono_field_get_value(MonoObject *obj, MonoClassField 
     GCPROTECT_END();
 }
 
-extern "C" EXPORT_API void mono_field_set_value(MonoObject *obj, MonoClassField *field, void *value)
+extern "C" EXPORT_API void EXPORT_CC mono_field_set_value(MonoObject *obj, MonoClassField *field, void *value)
 {
     TRACE_API("%p, %p, %p", obj, field, value);
 
@@ -1682,12 +1685,12 @@ extern "C" EXPORT_API void mono_field_set_value(MonoObject *obj, MonoClassField 
     GCPROTECT_END();
 }
 
-extern "C" EXPORT_API void mono_field_static_get_value(MonoVTable *vt, MonoClassField *field, void *value)
+extern "C" EXPORT_API void EXPORT_CC mono_field_static_get_value(MonoVTable *vt, MonoClassField *field, void *value)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
-extern "C" EXPORT_API void mono_gc_collect(int generation)
+extern "C" EXPORT_API void EXPORT_CC mono_gc_collect(int generation)
 {
     FCALL_CONTRACT;
     _ASSERTE(generation >= -1);
@@ -1699,57 +1702,57 @@ extern "C" EXPORT_API void mono_gc_collect(int generation)
     GCHeapUtilities::GetGCHeap()->GarbageCollect(generation, false, collection_blocking);
 }
 
-extern "C" EXPORT_API int mono_gc_collect_a_little ()
+extern "C" EXPORT_API int EXPORT_CC mono_gc_collect_a_little ()
 {
     ASSERT_NOT_IMPLEMENTED;
     return 0;
 }
 
-extern "C" EXPORT_API gint64 mono_gc_get_heap_size()
+extern "C" EXPORT_API gint64 EXPORT_CC mono_gc_get_heap_size()
 {
     FCALL_CONTRACT;
     // NOT CORRECT
     return GCHeapUtilities::GetGCHeap()->GetTotalBytesInUse();
 }
 
-extern "C" EXPORT_API gint64 mono_gc_get_max_time_slice_ns ()
+extern "C" EXPORT_API gint64 EXPORT_CC mono_gc_get_max_time_slice_ns ()
 {
     ASSERT_NOT_IMPLEMENTED;
     return 0;
 }
 
-extern "C" EXPORT_API gint64 mono_gc_get_used_size()
+extern "C" EXPORT_API gint64 EXPORT_CC mono_gc_get_used_size()
 {
     FCALL_CONTRACT;
     return GCHeapUtilities::GetGCHeap()->GetTotalBytesInUse();
 }
 
-extern "C" EXPORT_API gboolean mono_gc_is_incremental ()
+extern "C" EXPORT_API gboolean EXPORT_CC mono_gc_is_incremental ()
 {
     return false;
 }
 
-extern "C" EXPORT_API int mono_gc_max_generation()
+extern "C" EXPORT_API int EXPORT_CC mono_gc_max_generation()
 {
     FCALL_CONTRACT;
     return GCHeapUtilities::GetGCHeap()->GetMaxGeneration();
 }
 
-extern "C" EXPORT_API void mono_gc_set_incremental (gboolean value)
+extern "C" EXPORT_API void EXPORT_CC mono_gc_set_incremental (gboolean value)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
-extern "C" EXPORT_API void mono_gc_set_max_time_slice_ns (gint64 maxTimeSlice)
+extern "C" EXPORT_API void EXPORT_CC mono_gc_set_max_time_slice_ns (gint64 maxTimeSlice)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
-extern "C" EXPORT_API void mono_gc_wbarrier_generic_store(gpointer ptr, MonoObject* value)
+extern "C" EXPORT_API void EXPORT_CC mono_gc_wbarrier_generic_store(gpointer ptr, MonoObject* value)
 {
 }
 
-extern "C" EXPORT_API void mono_gc_wbarrier_set_field (MonoObject * obj, gpointer field_ptr, MonoObject * value)
+extern "C" EXPORT_API void EXPORT_CC mono_gc_wbarrier_set_field (MonoObject * obj, gpointer field_ptr, MonoObject * value)
 {
     GCX_COOP();
     
@@ -1774,7 +1777,7 @@ struct MonoHandleInfo
 MapSHashWithRemove<guint32, MonoHandleInfo> g_gc_map_id_to_handle;
 
 
-extern "C" EXPORT_API void mono_gchandle_free(guint32 gchandle)
+extern "C" EXPORT_API void EXPORT_CC mono_gchandle_free(guint32 gchandle)
 {
     CrstHolder lock(&g_gc_handles_lock);
 
@@ -1786,7 +1789,7 @@ extern "C" EXPORT_API void mono_gchandle_free(guint32 gchandle)
     }
 }
 
-extern "C" EXPORT_API MonoObject * mono_gchandle_get_target(guint32 gchandle)
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_gchandle_get_target(guint32 gchandle)
 {
     CrstHolder lock(&g_gc_handles_lock);
 
@@ -1800,7 +1803,7 @@ extern "C" EXPORT_API MonoObject * mono_gchandle_get_target(guint32 gchandle)
     return NULL;
 }
 
-extern "C" EXPORT_API gboolean mono_gchandle_is_in_domain(guint32 gchandle, MonoDomain * domain)
+extern "C" EXPORT_API gboolean EXPORT_CC mono_gchandle_is_in_domain(guint32 gchandle, MonoDomain * domain)
 {
     CrstHolder lock(&g_gc_handles_lock);
 
@@ -1814,7 +1817,7 @@ extern "C" EXPORT_API gboolean mono_gchandle_is_in_domain(guint32 gchandle, Mono
     return FALSE;
 }
 
-extern "C" EXPORT_API guint32 mono_gchandle_new(MonoObject * obj, gboolean pinned)
+extern "C" EXPORT_API guint32 EXPORT_CC mono_gchandle_new(MonoObject * obj, gboolean pinned)
 {
     // NOTE
     // mono is using a guint32 to identify an GCHandle
@@ -1833,7 +1836,7 @@ extern "C" EXPORT_API guint32 mono_gchandle_new(MonoObject * obj, gboolean pinne
     return id;
 }
 
-extern "C" EXPORT_API guint32 mono_gchandle_new_weakref(MonoObject *obj, gboolean track_resurrection)
+extern "C" EXPORT_API guint32 EXPORT_CC mono_gchandle_new_weakref(MonoObject *obj, gboolean track_resurrection)
 {
     CrstHolder lock(&g_gc_handles_lock);
 
@@ -1847,7 +1850,7 @@ extern "C" EXPORT_API guint32 mono_gchandle_new_weakref(MonoObject *obj, gboolea
     return id;
 }
 
-extern "C" EXPORT_API MonoObject* mono_gchandle_get_target_v2(uintptr_t gchandle)
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_gchandle_get_target_v2(uintptr_t gchandle)
 {
     GCX_COOP();
     // TODO: This method is not accurate with Cooperative/Preemptive mode
@@ -1857,20 +1860,20 @@ extern "C" EXPORT_API MonoObject* mono_gchandle_get_target_v2(uintptr_t gchandle
     return (MonoObject*)OBJECTREFToObject(objref);
 }
 
-extern "C" EXPORT_API gboolean mono_gchandle_is_in_domain_v2(uintptr_t gchandle, MonoDomain *domain)
+extern "C" EXPORT_API gboolean EXPORT_CC mono_gchandle_is_in_domain_v2(uintptr_t gchandle, MonoDomain *domain)
 {
     // we only support one domain, so this should always be true.
     return true;
 }
 
-extern "C" EXPORT_API void mono_gchandle_free_v2(uintptr_t gchandle)
+extern "C" EXPORT_API void EXPORT_CC mono_gchandle_free_v2(uintptr_t gchandle)
 {
     OBJECTHANDLE objectHandle = (OBJECTHANDLE)gchandle;
 
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(objectHandle);
 }
 
-extern "C" EXPORT_API uintptr_t mono_gchandle_new_v2(MonoObject *obj, gboolean pinned)
+extern "C" EXPORT_API uintptr_t EXPORT_CC mono_gchandle_new_v2(MonoObject *obj, gboolean pinned)
 {
     TRACE_API("%p, %d", obj, pinned);
     CONTRACTL
@@ -1890,7 +1893,7 @@ extern "C" EXPORT_API uintptr_t mono_gchandle_new_v2(MonoObject *obj, gboolean p
     return (uintptr_t)rawHandle;
 }
 
-extern "C" EXPORT_API uintptr_t mono_gchandle_new_weakref_v2(MonoObject *obj, gboolean track_resurrection)
+extern "C" EXPORT_API uintptr_t EXPORT_CC mono_gchandle_new_weakref_v2(MonoObject *obj, gboolean track_resurrection)
 {
     CONTRACTL
     {
@@ -1908,43 +1911,43 @@ extern "C" EXPORT_API uintptr_t mono_gchandle_new_weakref_v2(MonoObject *obj, gb
     return (uintptr_t)rawHandle;
 }
 
-extern "C" EXPORT_API MonoClass* mono_get_array_class()
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_get_array_class()
 {
     return (MonoClass*)CoreLibBinder::GetClass(CLASS__ARRAY);
 }
 
-extern "C" EXPORT_API MonoClass* mono_get_boolean_class()
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_get_boolean_class()
 {
     return (MonoClass*)CoreLibBinder::GetClass(CLASS__BOOLEAN);
 }
 
-extern "C" EXPORT_API MonoClass* mono_get_byte_class()
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_get_byte_class()
 {
     return (MonoClass*)CoreLibBinder::GetClass(CLASS__BYTE);
 }
 
-extern "C" EXPORT_API MonoClass* mono_get_char_class()
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_get_char_class()
 {
     return (MonoClass*)CoreLibBinder::GetClass(CLASS__CHAR);
 }
 
-extern "C" EXPORT_API MonoImage* mono_get_corlib()
+extern "C" EXPORT_API MonoImage* EXPORT_CC mono_get_corlib()
 {
     return (MonoImage*)CoreLibBinder::GetModule()->GetDomainAssembly()->GetAssembly();
 }
 
-extern "C" EXPORT_API MonoClass* mono_get_double_class()
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_get_double_class()
 {
     return (MonoClass*)CoreLibBinder::GetClass(CLASS__DOUBLE);
 }
 
-extern "C" EXPORT_API MonoClass* mono_get_enum_class()
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_get_enum_class()
 {
     MonoImage* img = mono_get_corlib();
     return mono_class_from_name(img, "System", "Enum");
 }
 
-extern "C" EXPORT_API MonoException * mono_get_exception_argument_null(const char *arg)
+extern "C" EXPORT_API MonoException* EXPORT_CC mono_get_exception_argument_null(const char *arg)
 {
     GCX_COOP();
     SString sarg(SString::Utf8, arg);
@@ -1952,66 +1955,66 @@ extern "C" EXPORT_API MonoException * mono_get_exception_argument_null(const cha
     return (MonoException*)OBJECTREFToObject(ee->GetThrowable());
 }
 
-extern "C" EXPORT_API MonoClass* mono_get_exception_class()
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_get_exception_class()
 {
     return (MonoClass*)CoreLibBinder::GetClass(CLASS__EXCEPTION);
 }
 
-extern "C" EXPORT_API MonoClass* mono_get_int16_class()
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_get_int16_class()
 {
     return (MonoClass*)CoreLibBinder::GetClass(CLASS__INT16);
 }
 
-extern "C" EXPORT_API MonoClass* mono_get_int32_class()
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_get_int32_class()
 {
     return (MonoClass*)CoreLibBinder::GetClass(CLASS__INT32);
 }
 
-extern "C" EXPORT_API MonoClass* mono_get_int64_class()
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_get_int64_class()
 {
     return (MonoClass*)CoreLibBinder::GetClass(CLASS__INT64);
 }
 
 DO_API_RET(MonoMethod*, mono_get_method, (MonoImage * image, guint32 token, MonoClass * klass))
 
-extern "C" EXPORT_API MonoClass* mono_get_object_class()
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_get_object_class()
 {
     return (MonoClass*)CoreLibBinder::GetClass(CLASS__OBJECT);
 }
 
-extern "C" EXPORT_API MonoDomain* mono_get_root_domain()
+extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_get_root_domain()
 {
     TRACE_API("", NULL);
     return gRootDomain;
 }
 
-extern "C" EXPORT_API MonoClass* mono_get_single_class()
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_get_single_class()
 {
     return (MonoClass*)CoreLibBinder::GetClass(CLASS__SINGLE);
 }
 
-extern "C" EXPORT_API MonoClass* mono_get_string_class()
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_get_string_class()
 {
     return (MonoClass*)CoreLibBinder::GetClass(CLASS__STRING);
 }
 
-extern "C" EXPORT_API void mono_image_close(MonoImage *image)
+extern "C" EXPORT_API void EXPORT_CC mono_image_close(MonoImage *image)
 {
     // NOP
 }
 
-extern "C" EXPORT_API MonoAssembly* mono_image_get_assembly(MonoImage *image)
+extern "C" EXPORT_API MonoAssembly* EXPORT_CC mono_image_get_assembly(MonoImage *image)
 {
     return (MonoAssembly*)image;
 }
 
-extern "C" EXPORT_API const char* mono_image_get_filename(MonoImage *image)
+extern "C" EXPORT_API const char* EXPORT_CC mono_image_get_filename(MonoImage *image)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API const char* mono_image_get_name(MonoImage *image)
+extern "C" EXPORT_API const char* EXPORT_CC mono_image_get_name(MonoImage *image)
 {
     TRACE_API("%p", image);
     CONTRACTL
@@ -2027,7 +2030,7 @@ extern "C" EXPORT_API const char* mono_image_get_name(MonoImage *image)
 
 DO_API_RET(const MonoTableInfo*, mono_image_get_table_info, (MonoImage * image, int table_id))
 
-extern "C" EXPORT_API int mono_image_get_table_rows(MonoImage *image, int table_id)
+extern "C" EXPORT_API int EXPORT_CC mono_image_get_table_rows(MonoImage *image, int table_id)
 {
     if (table_id == MONO_TABLE_TYPEDEF)
     {
@@ -2040,7 +2043,7 @@ extern "C" EXPORT_API int mono_image_get_table_rows(MonoImage *image, int table_
     return 0;
 }
 
-extern "C" EXPORT_API MonoImage* mono_image_loaded(const char *name)
+extern "C" EXPORT_API MonoImage* EXPORT_CC mono_image_loaded(const char *name)
 {
     if (g_LoadedImages == NULL)
         g_LoadedImages = new SArray<LoadedImage>;
@@ -2052,13 +2055,13 @@ extern "C" EXPORT_API MonoImage* mono_image_loaded(const char *name)
     return NULL;
 }
 
-extern "C" EXPORT_API MonoImage* mono_image_open_from_data_full(const void *data, guint32 data_len, gboolean need_copy, int *status, gboolean ref_only)
+extern "C" EXPORT_API MonoImage* EXPORT_CC mono_image_open_from_data_full(const void *data, guint32 data_len, gboolean need_copy, int *status, gboolean ref_only)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API MonoImage* mono_image_open_from_data_with_name(char *data, guint32 data_len, gboolean need_copy, int *status, gboolean refonly, const char *name)
+extern "C" EXPORT_API MonoImage* EXPORT_CC mono_image_open_from_data_with_name(char *data, guint32 data_len, gboolean need_copy, int *status, gboolean refonly, const char *name)
 {
     TRACE_API("%p, %d, %d, %p, %d, %s", data, data_len, need_copy, status, refonly, name);
 
@@ -2082,13 +2085,13 @@ extern "C" EXPORT_API MonoImage* mono_image_open_from_data_with_name(char *data,
 
 DO_API_RET(const char*, mono_image_strerror, (int status))
 
-extern "C" EXPORT_API gboolean mono_is_debugger_attached(void)
+extern "C" EXPORT_API gboolean EXPORT_CC mono_is_debugger_attached(void)
 {
     return FALSE;
 }
 
 
-extern "C" EXPORT_API int mono_jit_info_get_code_size(void* jit)
+extern "C" EXPORT_API int EXPORT_CC mono_jit_info_get_code_size(void* jit)
 {
     ASSERT_NOT_IMPLEMENTED;
     // TODO used 1 by instrumentation unity/mono profiler
@@ -2096,7 +2099,7 @@ extern "C" EXPORT_API int mono_jit_info_get_code_size(void* jit)
     return 0;
 }
 
-extern "C" EXPORT_API void* mono_jit_info_get_code_start(void* jit)
+extern "C" EXPORT_API void* EXPORT_CC mono_jit_info_get_code_start(void* jit)
 {
     ASSERT_NOT_IMPLEMENTED;
     // TODO used 1 by instrumentation unity/mono profiler
@@ -2104,13 +2107,13 @@ extern "C" EXPORT_API void* mono_jit_info_get_code_start(void* jit)
     return NULL;
 }
 
-extern "C" EXPORT_API MonoJitInfo* mono_jit_info_table_find(MonoDomain* domain, void* ip)
+extern "C" EXPORT_API MonoJitInfo* EXPORT_CC mono_jit_info_table_find(MonoDomain* domain, void* ip)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API MonoDomain* mono_jit_init(const char *file)
+extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init(const char *file)
 {
     TRACE_API("%s", file);
 
@@ -2139,7 +2142,7 @@ void list_tpa(const SString& searchPath, SString& tpa)
     }
 }
 
-extern "C" EXPORT_API MonoDomain* mono_jit_init_version(const char *file, const char* runtime_version)
+extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *file, const char* runtime_version)
 {
     #if defined(TARGET_UNIX)
 #if defined(__APPLE__)
@@ -2278,13 +2281,13 @@ extern "C" EXPORT_API MonoDomain* mono_jit_init_version(const char *file, const 
     return gCurrentDomain;
 }
 
-extern "C" EXPORT_API void mono_jit_parse_options(int argc, char * argv[])
+extern "C" EXPORT_API void EXPORT_CC mono_jit_parse_options(int argc, char * argv[])
 {
 }
 
 DO_API(void, mono_metadata_decode_row, (const MonoTableInfo * t, int idx, guint32 * res, int res_size))
 
-extern "C" EXPORT_API gboolean mono_metadata_signature_equal(MonoMethodSignature *sig1, MonoMethodSignature *sig2)
+extern "C" EXPORT_API gboolean EXPORT_CC mono_metadata_signature_equal(MonoMethodSignature *sig1, MonoMethodSignature *sig2)
 {
     if (mono_signature_get_param_count(sig1) != mono_signature_get_param_count(sig2))
         return FALSE;
@@ -2307,7 +2310,7 @@ extern "C" EXPORT_API gboolean mono_metadata_signature_equal(MonoMethodSignature
 
 DO_API_RET(gboolean, mono_metadata_type_equal, (MonoType * t1, MonoType * t2))
 
-extern "C" EXPORT_API char* mono_method_full_name(MonoMethod* method, gboolean signature)
+extern "C" EXPORT_API char* EXPORT_CC mono_method_full_name(MonoMethod* method, gboolean signature)
 {
     auto methodclr = reinterpret_cast<MonoMethod_clr*>(method);
  	LPCUTF8 name, namespaze;
@@ -2348,24 +2351,24 @@ extern "C" EXPORT_API char* mono_method_full_name(MonoMethod* method, gboolean s
     return _strdup(fullName.GetUTF8(buffer));
 }
 
-extern "C" EXPORT_API MonoClass* mono_method_get_class(MonoMethod *method)
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_method_get_class(MonoMethod *method)
 {
     auto method_clr = (MonoMethod_clr*)method;
     auto class_clr = (MonoClass_clr*)method_clr->GetClass()->GetMethodTable();
     return (MonoClass*)class_clr;
 }
 
-extern "C" EXPORT_API MonoMethod* mono_method_get_last_managed()
+extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_method_get_last_managed()
 {
     return (MonoMethod*)(intptr_t)g_isManaged;
 }
 
-extern "C" EXPORT_API const char* mono_method_get_name(MonoMethod *method)
+extern "C" EXPORT_API const char* EXPORT_CC mono_method_get_name(MonoMethod *method)
 {
     return reinterpret_cast<MonoMethod_clr*>(method)->GetName();
 }
 
-extern "C" EXPORT_API MonoReflectionMethod* mono_method_get_object(MonoDomain *domain, MonoMethod *method, MonoClass *refclass)
+extern "C" EXPORT_API MonoReflectionMethod* EXPORT_CC mono_method_get_object(MonoDomain *domain, MonoMethod *method, MonoClass *refclass)
 {
     GCX_COOP();
 
@@ -2381,25 +2384,25 @@ extern "C" EXPORT_API MonoReflectionMethod* mono_method_get_object(MonoDomain *d
     return (MonoReflectionMethod*)returnValue;
 }
 
-extern "C" EXPORT_API MonoMethodSignature* mono_method_signature(MonoMethod *method)
+extern "C" EXPORT_API MonoMethodSignature* EXPORT_CC mono_method_signature(MonoMethod *method)
 {
     return (MonoMethodSignature*)method;
 }
 
 DO_API_RET(MonoMethodSignature*, mono_method_signature_checked_slow, (MonoMethod * method, MonoError * error))
 
-extern "C" EXPORT_API MonoClass* mono_object_get_class(MonoObject *obj)
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_object_get_class(MonoObject *obj)
 {
     MonoClass_clr* klass = reinterpret_cast<MonoObject_clr*>(obj)->GetMethodTable();
     return (MonoClass*)klass;
 }
 
-extern "C" EXPORT_API guint32 mono_object_get_size(MonoObject *obj)
+extern "C" EXPORT_API guint32 EXPORT_CC mono_object_get_size(MonoObject *obj)
 {
     return (guint32)reinterpret_cast<MonoObject_clr*>(obj)->GetSize();
 }
 
-extern "C" EXPORT_API MonoMethod* mono_object_get_virtual_method(MonoObject *obj, MonoMethod *method)
+extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_object_get_virtual_method(MonoObject *obj, MonoMethod *method)
 {
     TRACE_API("%x, %x", obj, method);
 
@@ -2415,7 +2418,7 @@ extern "C" EXPORT_API MonoMethod* mono_object_get_virtual_method(MonoObject *obj
     return m2;
 }
 
-extern "C" EXPORT_API MonoObject* mono_object_isinst(MonoObject *obj, MonoClass* klass)
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_object_isinst(MonoObject *obj, MonoClass* klass)
 {
     MonoClass* clazz = mono_object_get_class(obj);
     if (mono_class_is_subclass_of(clazz, klass, TRUE))
@@ -2423,7 +2426,7 @@ extern "C" EXPORT_API MonoObject* mono_object_isinst(MonoObject *obj, MonoClass*
     return NULL;
 }
 
-extern "C" EXPORT_API MonoObject* mono_object_new(MonoDomain *domain, MonoClass *klass)
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_object_new(MonoDomain *domain, MonoClass *klass)
 {
     TRACE_API("%x, %x", domain, klass);
 
@@ -2442,19 +2445,19 @@ extern "C" EXPORT_API MonoObject* mono_object_new(MonoDomain *domain, MonoClass 
     }
 }
 
-extern "C" EXPORT_API MonoObject * mono_object_new_alloc_specific(MonoVTable *vtable)
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_object_new_alloc_specific(MonoVTable *vtable)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API MonoObject * mono_object_new_specific(MonoVTable *vtable)
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_object_new_specific(MonoVTable *vtable)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API gpointer mono_object_unbox(MonoObject* o)
+extern "C" EXPORT_API gpointer EXPORT_CC mono_object_unbox(MonoObject* o)
 {
     CONTRACTL
     {
@@ -2467,90 +2470,90 @@ extern "C" EXPORT_API gpointer mono_object_unbox(MonoObject* o)
     return (gpointer)reinterpret_cast<MonoObject_clr*>(o)-> UnBox();
 }
 
-extern "C" EXPORT_API int mono_parse_default_optimizations(const char* p)
+extern "C" EXPORT_API int EXPORT_CC mono_parse_default_optimizations(const char* p)
 {
     // NOP
     return 0;
 }
 
-extern "C" EXPORT_API char* mono_pmip(void *ip)
+extern "C" EXPORT_API char* EXPORT_CC mono_pmip(void *ip)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API void mono_profiler_install(void *prof, MonoProfileFunc shutdown_callback)
+extern "C" EXPORT_API void EXPORT_CC mono_profiler_install(void *prof, MonoProfileFunc shutdown_callback)
 {
     // NOP
 }
 
-extern "C" EXPORT_API void mono_profiler_install_allocation(MonoProfileAllocFunc callback)
+extern "C" EXPORT_API void EXPORT_CC mono_profiler_install_allocation(MonoProfileAllocFunc callback)
 {
     // NOP
 }
 
-extern "C" EXPORT_API void mono_profiler_install_enter_leave(MonoProfileMethodFunc enter, MonoProfileMethodFunc fleave)
+extern "C" EXPORT_API void EXPORT_CC mono_profiler_install_enter_leave(MonoProfileMethodFunc enter, MonoProfileMethodFunc fleave)
 {
     // NOP
 }
 
-extern "C" EXPORT_API void mono_profiler_install_gc(MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback)
+extern "C" EXPORT_API void EXPORT_CC mono_profiler_install_gc(MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback)
 {
 }
 
-extern "C" EXPORT_API void mono_profiler_install_jit_end(MonoProfileJitResult jit_end)
-{
-    // NOP
-}
-
-extern "C" EXPORT_API void mono_profiler_install_thread(MonoProfileThreadFunc start, MonoProfileThreadFunc end)
+extern "C" EXPORT_API void EXPORT_CC mono_profiler_install_jit_end(MonoProfileJitResult jit_end)
 {
     // NOP
 }
 
-extern "C" EXPORT_API void mono_profiler_set_events(int events)
+extern "C" EXPORT_API void EXPORT_CC mono_profiler_install_thread(MonoProfileThreadFunc start, MonoProfileThreadFunc end)
+{
+    // NOP
+}
+
+extern "C" EXPORT_API void EXPORT_CC mono_profiler_set_events(int events)
 {
     // NOP
 }
 
 
-extern "C" EXPORT_API MonoMethod* mono_property_get_get_method(MonoProperty *prop)
+extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_property_get_get_method(MonoProperty *prop)
 {
     return (MonoMethod*)prop;
 }
 
-extern "C" EXPORT_API void mono_raise_exception(MonoException *ex)
+extern "C" EXPORT_API void EXPORT_CC mono_raise_exception(MonoException *ex)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
 
-extern "C" EXPORT_API MonoArray* mono_reflection_get_custom_attrs_by_type(MonoObject* object, MonoClass* klass)
+extern "C" EXPORT_API MonoArray* EXPORT_CC mono_reflection_get_custom_attrs_by_type(MonoObject* object, MonoClass* klass)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
 
-extern "C" EXPORT_API void mono_runtime_cleanup(MonoDomain *domain)
+extern "C" EXPORT_API void EXPORT_CC mono_runtime_cleanup(MonoDomain *domain)
 {
     ASSERT_NOT_IMPLEMENTED;
     //TODO not used
 }
 
-extern "C" EXPORT_API MonoObject* mono_runtime_delegate_invoke(MonoObject *delegate, void **params, MonoException **exc)
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_runtime_delegate_invoke(MonoObject *delegate, void **params, MonoException **exc)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API int mono_runtime_exec_main(MonoMethod *method, MonoArray *args, MonoObject **exc)
+extern "C" EXPORT_API int EXPORT_CC mono_runtime_exec_main(MonoMethod *method, MonoArray *args, MonoObject **exc)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API MonoObject* mono_runtime_invoke(MonoMethod *method, void *obj, void **params, MonoException **exc)
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_runtime_invoke(MonoMethod *method, void *obj, void **params, MonoException **exc)
 {
     TRACE_API("%p, %p, %p, %p", method, obj, params, exc);
 
@@ -2564,13 +2567,13 @@ extern "C" EXPORT_API MonoObject* mono_runtime_invoke(MonoMethod *method, void *
         return mono_runtime_invoke_with_nested_object(method, obj, obj, params, exc);
 }
 
-extern "C" EXPORT_API MonoObject* mono_runtime_invoke_array(MonoMethod *method, void *obj, MonoArray *params, MonoException **exc)
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_runtime_invoke_array(MonoMethod *method, void *obj, MonoArray *params, MonoException **exc)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API MonoObject* mono_runtime_invoke_with_nested_object(MonoMethod *method, void *obj, void *parentobj, void **params, MonoException **exc)
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_runtime_invoke_with_nested_object(MonoMethod *method, void *obj, void *parentobj, void **params, MonoException **exc)
 {
     TRACE_API("%p, %p, %p, %p, %p", method, obj, parentobj, params, exc);
 
@@ -2755,14 +2758,14 @@ extern "C" EXPORT_API MonoObject* mono_runtime_invoke_with_nested_object(MonoMet
     return nullptr;
 }
 
-extern "C" EXPORT_API gboolean mono_runtime_is_shutting_down()
+extern "C" EXPORT_API gboolean EXPORT_CC mono_runtime_is_shutting_down()
 {
     ASSERT_NOT_IMPLEMENTED;
     //TODO not used
     return FALSE;
 }
 
-extern "C" EXPORT_API void mono_runtime_object_init(MonoObject *this_obj)
+extern "C" EXPORT_API void EXPORT_CC mono_runtime_object_init(MonoObject *this_obj)
 {
     TRACE_API("%x", this_obj);
 
@@ -2785,23 +2788,23 @@ extern "C" EXPORT_API void mono_runtime_object_init(MonoObject *this_obj)
     GCPROTECT_END();
 }
 
-extern "C" EXPORT_API void mono_runtime_set_shutting_down()
+extern "C" EXPORT_API void EXPORT_CC mono_runtime_set_shutting_down()
 {
     ASSERT_NOT_IMPLEMENTED;
     //TODO used once in Runtime\Mono\MonoManager.cpp CleanupMono()
 }
 
-extern "C" EXPORT_API void mono_runtime_unhandled_exception_policy_set(MonoRuntimeUnhandledExceptionPolicy policy)
+extern "C" EXPORT_API void EXPORT_CC mono_runtime_unhandled_exception_policy_set(MonoRuntimeUnhandledExceptionPolicy policy)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
-extern "C" EXPORT_API void mono_set_assemblies_path(const char* name)
+extern "C" EXPORT_API void EXPORT_CC mono_set_assemblies_path(const char* name)
 {
     s_AssemblyPaths = new SString(SString::Utf8, name);
 }
 
-extern "C" EXPORT_API void mono_set_assemblies_path_null_separated (const char* name)
+extern "C" EXPORT_API void EXPORT_CC mono_set_assemblies_path_null_separated (const char* name)
 {
     s_AssemblyPaths = new SString();
     while (*name != NULL)
@@ -2813,48 +2816,48 @@ extern "C" EXPORT_API void mono_set_assemblies_path_null_separated (const char* 
     }
 }
 
-extern "C" EXPORT_API void mono_set_break_policy(MonoBreakPolicyFunc policy_callback)
+extern "C" EXPORT_API void EXPORT_CC mono_set_break_policy(MonoBreakPolicyFunc policy_callback)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
 DO_API(void, mono_set_crash_chaining, (gboolean))
 
-extern "C" EXPORT_API void mono_set_defaults(int verbose_level, guint32 opts)
+extern "C" EXPORT_API void EXPORT_CC mono_set_defaults(int verbose_level, guint32 opts)
 {
     // NOP
 }
 
-extern "C" EXPORT_API void mono_set_dirs(const char *assembly_dir, const char *config_dir)
+extern "C" EXPORT_API void EXPORT_CC mono_set_dirs(const char *assembly_dir, const char *config_dir)
 {
     s_AssemblyDir = new SString(SString::Utf8, assembly_dir);
     s_EtcDir = new SString(SString::Utf8, config_dir);
 }
 
-extern "C" EXPORT_API void
+extern "C" EXPORT_API void EXPORT_CC
 mono_set_find_plugin_callback (gconstpointer find)
 {
 	unity_find_plugin_callback = (UnityFindPluginCallback)find;
 }
 
-extern "C" EXPORT_API void mono_set_ignore_version_and_key_when_finding_assemblies_already_loaded(gboolean value)
+extern "C" EXPORT_API void EXPORT_CC mono_set_ignore_version_and_key_when_finding_assemblies_already_loaded(gboolean value)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
-extern "C" EXPORT_API void mono_set_signal_chaining(gboolean)
+extern "C" EXPORT_API void EXPORT_CC mono_set_signal_chaining(gboolean)
 {
     // NOP
 }
 
-extern "C" EXPORT_API guint32 mono_signature_get_param_count(MonoMethodSignature *sig)
+extern "C" EXPORT_API guint32 EXPORT_CC mono_signature_get_param_count(MonoMethodSignature *sig)
 {
     MonoMethodSignature_clr* msig = (MonoMethodSignature_clr*)sig;
     MetaSig metasig(msig);
     return metasig.NumFixedArgs();
 }
 
-extern "C" EXPORT_API MonoType* mono_signature_get_params(MonoMethodSignature *sig, gpointer *iter)
+extern "C" EXPORT_API MonoType* EXPORT_CC mono_signature_get_params(MonoMethodSignature *sig, gpointer *iter)
 {
     MonoMethodSignature_clr* signature = (MonoMethodSignature_clr*)sig;
     MetaSig* metasig = (MetaSig*)*iter;
@@ -2876,7 +2879,7 @@ extern "C" EXPORT_API MonoType* mono_signature_get_params(MonoMethodSignature *s
     return (MonoType*)typeHandle.AsPtr();
 }
 
-extern "C" EXPORT_API MonoType* mono_signature_get_return_type(MonoMethodSignature *sig)
+extern "C" EXPORT_API MonoType* EXPORT_CC mono_signature_get_return_type(MonoMethodSignature *sig)
 {
     MonoMethodSignature_clr* signature = (MonoMethodSignature_clr*)sig;
     MetaSig msig(signature);
@@ -2884,7 +2887,7 @@ extern "C" EXPORT_API MonoType* mono_signature_get_return_type(MonoMethodSignatu
     return (MonoType*)reth.AsPtr();
 }
 
-extern "C" EXPORT_API char mono_signature_is_instance(MonoMethodSignature *sig)
+extern "C" EXPORT_API char EXPORT_CC mono_signature_is_instance(MonoMethodSignature *sig)
 {
     MonoMethodSignature_clr* sig_clr = (MonoMethodSignature_clr*)sig;
     MetaSig msig(sig_clr);
@@ -2892,14 +2895,14 @@ extern "C" EXPORT_API char mono_signature_is_instance(MonoMethodSignature *sig)
 }
 
 typedef gboolean(*MonoStackWalk) (MonoMethod *method, gint32 native_offset, gint32 il_offset, gboolean managed, gpointer data);
-extern "C" EXPORT_API void mono_stack_walk(MonoStackWalk func, gpointer user_data)
+extern "C" EXPORT_API void EXPORT_CC mono_stack_walk(MonoStackWalk func, gpointer user_data)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
 DO_API(void, mono_stack_walk_no_il, (MonoStackWalk start, void* user_data));
 
-extern "C" EXPORT_API MonoString* mono_string_from_utf16(const gunichar2* text)
+extern "C" EXPORT_API MonoString* EXPORT_CC mono_string_from_utf16(const gunichar2* text)
 {
     assert(text != nullptr);
     InlineSString<256> sstr((const WCHAR*)text);
@@ -2907,7 +2910,7 @@ extern "C" EXPORT_API MonoString* mono_string_from_utf16(const gunichar2* text)
     return (MonoString*)OBJECTREFToObject(AllocateString(sstr));
 }
 
-extern "C" EXPORT_API MonoString* mono_string_new_len(MonoDomain *domain, const char *text, guint32 length)
+extern "C" EXPORT_API MonoString* EXPORT_CC mono_string_new_len(MonoDomain *domain, const char *text, guint32 length)
 {
     assert(text != nullptr);
     InlineSString<256> sstr(SString::Utf8, text, length);
@@ -2919,7 +2922,7 @@ extern "C" EXPORT_API MonoString* mono_string_new_len(MonoDomain *domain, const 
 
 DO_API_RET(MonoString*, mono_string_new_utf16, (MonoDomain * domain, const guint16 * text, gint32 length))
 
-extern "C" EXPORT_API MonoString* mono_string_new_wrapper(const char* text)
+extern "C" EXPORT_API MonoString* EXPORT_CC mono_string_new_wrapper(const char* text)
 {
     assert(text != nullptr);
     InlineSString<256> sstr(SString::Utf8, text);
@@ -2927,13 +2930,13 @@ extern "C" EXPORT_API MonoString* mono_string_new_wrapper(const char* text)
     return (MonoString*)OBJECTREFToObject(AllocateString(sstr));
 }
 
-extern "C" EXPORT_API gunichar2* mono_string_to_utf16(MonoString *string_obj)
+extern "C" EXPORT_API gunichar2* EXPORT_CC mono_string_to_utf16(MonoString *string_obj)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API char* mono_string_to_utf8(MonoString *string_obj)
+extern "C" EXPORT_API char* EXPORT_CC mono_string_to_utf8(MonoString *string_obj)
 {
     SString sstr;
     ((StringObject*)string_obj)->GetSString(sstr);
@@ -2941,13 +2944,13 @@ extern "C" EXPORT_API char* mono_string_to_utf8(MonoString *string_obj)
     return _strdup(sstr.GetUTF8(buffer));
 }
 
-extern "C" EXPORT_API char* mono_stringify_assembly_name(MonoAssemblyName *aname)
+extern "C" EXPORT_API char* EXPORT_CC mono_stringify_assembly_name(MonoAssemblyName *aname)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API MonoThread * mono_thread_attach(MonoDomain *domain)
+extern "C" EXPORT_API MonoThread* EXPORT_CC mono_thread_attach(MonoDomain *domain)
 {
     auto domain_clr = (MonoDomain_clr*)domain;
     MonoThread_clr* currentThread = GetThreadNULLOk();
@@ -2964,12 +2967,12 @@ extern "C" EXPORT_API MonoThread * mono_thread_attach(MonoDomain *domain)
     return (MonoThread*)currentThread;
 }
 
-extern "C" EXPORT_API MonoThread * mono_thread_current(void)
+extern "C" EXPORT_API MonoThread* EXPORT_CC mono_thread_current(void)
 {
     return (MonoThread*)GetThread();
 }
 
-extern "C" EXPORT_API void mono_thread_detach(MonoThread *thread)
+extern "C" EXPORT_API void EXPORT_CC mono_thread_detach(MonoThread *thread)
 {
     CONTRACTL{
         PRECONDITION(thread != nullptr);
@@ -2980,7 +2983,7 @@ extern "C" EXPORT_API void mono_thread_detach(MonoThread *thread)
     thread_clr->DetachThread(FALSE);
 }
 
-extern "C" EXPORT_API MonoThread * mono_thread_exit()
+extern "C" EXPORT_API MonoThread* EXPORT_CC mono_thread_exit()
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
@@ -2988,22 +2991,22 @@ extern "C" EXPORT_API MonoThread * mono_thread_exit()
 
 DO_API_RET(gboolean, mono_thread_has_sufficient_execution_stack, (void))
 
-extern "C" EXPORT_API void mono_thread_pool_cleanup()
+extern "C" EXPORT_API void EXPORT_CC mono_thread_pool_cleanup()
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
-extern "C" EXPORT_API void mono_thread_pop_appdomain_ref()
+extern "C" EXPORT_API void EXPORT_CC mono_thread_pop_appdomain_ref()
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
-extern "C" EXPORT_API void mono_thread_push_appdomain_ref(MonoDomain *domain)
+extern "C" EXPORT_API void EXPORT_CC mono_thread_push_appdomain_ref(MonoDomain *domain)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
-extern "C" EXPORT_API void mono_thread_set_main(MonoThread* thread)
+extern "C" EXPORT_API void EXPORT_CC mono_thread_set_main(MonoThread* thread)
 {
     CONTRACTL{
         PRECONDITION(thread != nullptr);
@@ -3013,46 +3016,46 @@ extern "C" EXPORT_API void mono_thread_set_main(MonoThread* thread)
     //assert(AppDomain::GetCurrentDomain()->CanThreadEnter(thread_clr));
 }
 
-extern "C" EXPORT_API void mono_thread_suspend_all_other_threads()
+extern "C" EXPORT_API void EXPORT_CC mono_thread_suspend_all_other_threads()
 {
     ASSERT_NOT_IMPLEMENTED;
     //TODO used once in Runtime\Mono\MonoManager.cpp CleanupMono()
 }
 
-extern "C" EXPORT_API void mono_threads_set_shutting_down()
+extern "C" EXPORT_API void EXPORT_CC mono_threads_set_shutting_down()
 {
     ASSERT_NOT_IMPLEMENTED;
     //TODO used once in Runtime\Mono\MonoManager.cpp CleanupMono()
 }
 
-extern "C" EXPORT_API void mono_trace_set_level_string(const char *value)
+extern "C" EXPORT_API void EXPORT_CC mono_trace_set_level_string(const char *value)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
 DO_API(void, mono_trace_set_log_handler, (MonoLogCallback callback, void *user_data))
 
-extern "C" EXPORT_API void mono_trace_set_mask_string(const char *value)
+extern "C" EXPORT_API void EXPORT_CC mono_trace_set_mask_string(const char *value)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
 DO_API_RET(guint32, mono_type_get_attrs, (MonoType * type))
 
-extern "C" EXPORT_API MonoClass* mono_type_get_class(MonoType *type)
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_type_get_class(MonoType *type)
 {
     TypeHandle handle = TypeHandle::FromPtr((PTR_VOID)type);
     return (MonoClass*)handle.AsMethodTable();
 }
 
-extern "C" EXPORT_API MonoType* mono_type_get_generic_arg(MonoType *type, int index)
+extern "C" EXPORT_API MonoType* EXPORT_CC mono_type_get_generic_arg(MonoType *type, int index)
 {
     TypeHandle handle = TypeHandle::FromPtr((PTR_VOID)type);
     Instantiation inst = handle.GetInstantiation();
     return (MonoType*)inst[index].AsPtr();
 }
 
-extern "C" EXPORT_API char* mono_type_get_name(MonoType *type)
+extern "C" EXPORT_API char* EXPORT_CC mono_type_get_name(MonoType *type)
 {
     TypeHandle handle = TypeHandle::FromPtr((PTR_VOID)type);
     SString ssBuf;
@@ -3061,7 +3064,7 @@ extern "C" EXPORT_API char* mono_type_get_name(MonoType *type)
     return _strdup(ssBuf.GetUTF8(buffer));
 }
 
-extern "C" EXPORT_API char* mono_type_get_name_full(MonoType *type, MonoTypeNameFormat format)
+extern "C" EXPORT_API char* EXPORT_CC mono_type_get_name_full(MonoType *type, MonoTypeNameFormat format)
 {
     TRACE_API("%p %d", type, format);
     if (format != MonoTypeNameFormat::MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
@@ -3078,21 +3081,21 @@ extern "C" EXPORT_API char* mono_type_get_name_full(MonoType *type, MonoTypeName
     return _strdup(ssBuf.GetUTF8(buffer));
 }
 
-extern "C" EXPORT_API int mono_type_get_num_generic_args(MonoType *type)
+extern "C" EXPORT_API int EXPORT_CC mono_type_get_num_generic_args(MonoType *type)
 {
     TypeHandle handle = TypeHandle::FromPtr((PTR_VOID)type);
     Instantiation inst = handle.GetInstantiation();
     return inst.GetNumArgs();
 }
 
-extern "C" EXPORT_API MonoObject* mono_type_get_object(MonoDomain *domain, MonoType *type)
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_type_get_object(MonoDomain *domain, MonoType *type)
 {
     TypeHandle clrType = TypeHandle::FromPtr(reinterpret_cast<PTR_VOID>(type));
     GCX_COOP();
     return (MonoObject*) OBJECTREFToObject(clrType.GetManagedClassObject());
 }
 
-extern "C" EXPORT_API int mono_type_get_type(MonoType *type)
+extern "C" EXPORT_API int EXPORT_CC mono_type_get_type(MonoType *type)
 {
 retry:
 
@@ -3193,7 +3196,7 @@ retry:
     }
 }
 
-extern "C" EXPORT_API gboolean mono_type_is_byref (MonoType * type)
+extern "C" EXPORT_API gboolean EXPORT_CC mono_type_is_byref (MonoType * type)
 {
     TypeHandle clrType = TypeHandle::FromPtr(reinterpret_cast<PTR_VOID>(type));
     return clrType.IsByRef();
@@ -3201,14 +3204,14 @@ extern "C" EXPORT_API gboolean mono_type_is_byref (MonoType * type)
 
 DO_API_RET(uint32_t, mono_unity_allocation_granularity, ())
 
-extern "C" EXPORT_API MonoArray* mono_unity_array_new_2d(MonoDomain * domain, MonoClass * eclass, size_t size0, size_t size1)
+extern "C" EXPORT_API MonoArray* EXPORT_CC mono_unity_array_new_2d(MonoDomain * domain, MonoClass * eclass, size_t size0, size_t size1)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
 
-extern "C" EXPORT_API MonoArray* mono_unity_array_new_3d(MonoDomain * domain, MonoClass * eclass, size_t size0, size_t size1, size_t size2)
+extern "C" EXPORT_API MonoArray* EXPORT_CC mono_unity_array_new_3d(MonoDomain * domain, MonoClass * eclass, size_t size0, size_t size1, size_t size2)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
@@ -3219,14 +3222,14 @@ DO_API_RET(uint32_t, mono_unity_array_object_header_size, ())
 DO_API(void, mono_unity_assembly_mempool_chunk_foreach, (MonoAssembly * assembly, MonoDataFunc callback, void* userData))
 
 #if defined(HOST_OSX) || defined(HOST_UNIX)
-extern "C" EXPORT_API int mono_unity_backtrace_from_context(void* context, void* array[], int count)
+extern "C" EXPORT_API int EXPORT_CC mono_unity_backtrace_from_context(void* context, void* array[], int count)
 {
     ASSERT_NOT_IMPLEMENTED;
     return 0;
 }
 #endif
 
-extern "C" EXPORT_API MonoManagedMemorySnapshot* mono_unity_capture_memory_snapshot ()
+extern "C" EXPORT_API MonoManagedMemorySnapshot* EXPORT_CC mono_unity_capture_memory_snapshot ()
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
@@ -3236,7 +3239,7 @@ DO_API_RET(gboolean, mono_unity_class_field_is_literal, (MonoClassField * field)
 
 DO_API(void, mono_unity_class_for_each, (MonoClassFunc callback, void* userData))
 
-extern "C" EXPORT_API MonoClass* mono_unity_class_get(MonoImage * image, guint32 type_token)
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_unity_class_get(MonoImage * image, guint32 type_token)
 {
     DomainAssembly* domainAssembly = reinterpret_cast<MonoImage_clr*>(image)->GetDomainAssembly();
     TypeHandle th = domainAssembly->GetModule()->LookupTypeDef(type_token);
@@ -3255,7 +3258,7 @@ extern "C" EXPORT_API MonoClass* mono_unity_class_get(MonoImage * image, guint32
 
 DO_API_RET(uint32_t, mono_unity_class_get_data_size, (MonoClass * klass))
 
-extern "C" EXPORT_API MonoClass* mono_unity_class_get_generic_type_definition (MonoClass * klass)
+extern "C" EXPORT_API MonoClass* EXPORT_CC mono_unity_class_get_generic_type_definition (MonoClass * klass)
 {
     CONTRACTL{
         PRECONDITION(klass != nullptr);
@@ -3266,7 +3269,7 @@ extern "C" EXPORT_API MonoClass* mono_unity_class_get_generic_type_definition (M
 
 DO_API_RET(gboolean, mono_unity_class_has_failure, (MonoClass * klass))
 
-extern "C" EXPORT_API gboolean mono_unity_class_is_abstract(MonoClass* klass)
+extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_is_abstract(MonoClass* klass)
 {
     CONTRACTL
     {
@@ -3279,7 +3282,7 @@ extern "C" EXPORT_API gboolean mono_unity_class_is_abstract(MonoClass* klass)
     return reinterpret_cast<MonoClass_clr*>(klass)->IsAbstract() ? TRUE : FALSE;
 }
 
-extern "C" EXPORT_API gboolean mono_unity_class_is_interface(MonoClass* klass)
+extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_is_interface(MonoClass* klass)
 {
     CONTRACTL
     {
@@ -3300,7 +3303,7 @@ DO_API_RET(MonoArray*, mono_unity_custom_attrs_construct, (MonoCustomAttrInfo * 
 
 DO_API(void, mono_unity_domain_mempool_chunk_foreach, (MonoDomain * domain, MonoDataFunc callback, void* userData))
 
-extern "C" EXPORT_API void mono_unity_domain_set_config(MonoDomain * domain, const char *base_dir, const char *config_file_name)
+extern "C" EXPORT_API void EXPORT_CC mono_unity_domain_set_config(MonoDomain * domain, const char *base_dir, const char *config_file_name)
 {
     // NOP
 }
@@ -3309,19 +3312,19 @@ DO_API_RET(MonoException*, mono_unity_error_convert_to_exception, (MonoError * e
 
 DO_API_RET(MonoClassField*, mono_unity_field_from_token_checked, (MonoImage * image, guint32 token, MonoClass** retklass, MonoGenericContext * context, MonoError * error))
 
-extern "C" EXPORT_API void mono_unity_free_captured_memory_snapshot (MonoManagedMemorySnapshot * snapshot)
+extern "C" EXPORT_API void EXPORT_CC mono_unity_free_captured_memory_snapshot (MonoManagedMemorySnapshot * snapshot)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
-extern "C" EXPORT_API void mono_unity_g_free(void* p)
+extern "C" EXPORT_API void EXPORT_CC mono_unity_g_free(void* p)
 {
     free(p);
 }
 
 int gc_disabled = 0;
 
-extern "C" EXPORT_API void mono_unity_gc_disable ()
+extern "C" EXPORT_API void EXPORT_CC mono_unity_gc_disable ()
 {
     TRACE_API("", NULL);
 
@@ -3332,7 +3335,7 @@ extern "C" EXPORT_API void mono_unity_gc_disable ()
     gc_disabled++;
 }
 
-extern "C" EXPORT_API void mono_unity_gc_enable ()
+extern "C" EXPORT_API void EXPORT_CC mono_unity_gc_enable ()
 {
     TRACE_API("", NULL);
 
@@ -3347,7 +3350,7 @@ DO_API(void, mono_unity_gc_handles_foreach_get_target, (MonoDataFunc callback, v
 
 DO_API(void, mono_unity_gc_heap_foreach, (MonoDataFunc callback, void* userData))
 
-extern "C" EXPORT_API int mono_unity_gc_is_disabled ()
+extern "C" EXPORT_API int EXPORT_CC mono_unity_gc_is_disabled ()
 {
     return gc_disabled != 0;
 }
@@ -3356,37 +3359,37 @@ DO_API(void, mono_unity_gc_set_mode, (MonoGCMode mode));
 
 DO_API(void, mono_unity_image_set_mempool_chunk_foreach, (MonoDataFunc callback, void* userdata))
 
-extern "C" EXPORT_API void mono_unity_jit_cleanup(MonoDomain *domain)
+extern "C" EXPORT_API void EXPORT_CC mono_unity_jit_cleanup(MonoDomain *domain)
 {
 }
 
-extern "C" EXPORT_API void* mono_unity_liveness_allocate_struct(MonoClass* filter, int max_object_count, mono_register_object_callback callback, void* userdata, mono_liveness_reallocate_callback reallocate)
+extern "C" EXPORT_API void* EXPORT_CC mono_unity_liveness_allocate_struct(MonoClass* filter, int max_object_count, mono_register_object_callback callback, void* userdata, mono_liveness_reallocate_callback reallocate)
 {
     ASSERT_NOT_IMPLEMENTED;
     return NULL;
 }
 
-extern "C" EXPORT_API void mono_unity_liveness_calculation_from_root(MonoObject* root, void* state)
+extern "C" EXPORT_API void EXPORT_CC mono_unity_liveness_calculation_from_root(MonoObject* root, void* state)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
-extern "C" EXPORT_API void mono_unity_liveness_calculation_from_statics(void* state)
+extern "C" EXPORT_API void EXPORT_CC mono_unity_liveness_calculation_from_statics(void* state)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
-extern "C" EXPORT_API void mono_unity_liveness_finalize(void* state)
+extern "C" EXPORT_API void EXPORT_CC mono_unity_liveness_finalize(void* state)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
-extern "C" EXPORT_API void mono_unity_liveness_free_struct(void* state)
+extern "C" EXPORT_API void EXPORT_CC mono_unity_liveness_free_struct(void* state)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
 
-extern "C" EXPORT_API MonoException* mono_unity_loader_get_last_error_and_error_prepare_exception()
+extern "C" EXPORT_API MonoException* EXPORT_CC mono_unity_loader_get_last_error_and_error_prepare_exception()
 {
     //ASSERT_NOT_IMPLEMENTED;
     return NULL;
@@ -3402,22 +3405,22 @@ DO_API_RET(uint32_t, mono_unity_offset_of_array_length_in_array_object_header, (
 
 DO_API(void, mono_unity_root_domain_mempool_chunk_foreach, (MonoDataFunc callback, void* userdata))
 
-extern "C" EXPORT_API void mono_unity_runtime_set_main_args(int, const char* argv[])
+extern "C" EXPORT_API void EXPORT_CC mono_unity_runtime_set_main_args(int, const char* argv[])
 {
     // NOP
 }
 
-extern "C" EXPORT_API void mono_unity_set_data_dir (const char * dir)
+extern "C" EXPORT_API void EXPORT_CC mono_unity_set_data_dir (const char * dir)
 {
 }
 
-extern "C" EXPORT_API void mono_unity_set_embeddinghostname(const char* name)
+extern "C" EXPORT_API void EXPORT_CC mono_unity_set_embeddinghostname(const char* name)
 {
     // NOP
 }
 
 typedef void(*vprintf_func)(const char* msg, va_list args);
-extern "C" EXPORT_API void mono_unity_set_vprintf_func(vprintf_func func)
+extern "C" EXPORT_API void EXPORT_CC mono_unity_set_vprintf_func(vprintf_func func)
 {
     ASSERT_NOT_IMPLEMENTED;
 }
@@ -3426,7 +3429,7 @@ DO_API(void, mono_unity_start_gc_world, ())
 
 DO_API(void, mono_unity_stop_gc_world, ())
 
-extern "C" EXPORT_API MonoString* mono_unity_string_empty_wrapper()
+extern "C" EXPORT_API MonoString* EXPORT_CC mono_unity_string_empty_wrapper()
 {
     return mono_string_new_wrapper("");
 }
@@ -3439,7 +3442,7 @@ DO_API_RET(gboolean, mono_unity_type_is_static, (MonoType * type))
 
 DO_API_RET(void*, mono_unity_vtable_get_static_field_data, (MonoVTable * vTable))
 
-extern "C" EXPORT_API MonoObject * mono_value_box(MonoDomain *domain, MonoClass *klass, gpointer val)
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_value_box(MonoDomain *domain, MonoClass *klass, gpointer val)
 {
     GCX_COOP();
 
@@ -3450,14 +3453,14 @@ extern "C" EXPORT_API MonoObject * mono_value_box(MonoDomain *domain, MonoClass 
     return (MonoObject*)OBJECTREFToObject(classClr->Box(val));
 }
 
-extern "C" EXPORT_API void mono_verifier_set_mode(MiniVerifierMode)
+extern "C" EXPORT_API void EXPORT_CC mono_verifier_set_mode(MiniVerifierMode)
 {
     // NOP
     //TODO used in Runtime\Mono\MonoManager.cpp SetSecurityMode()
 }
 
 
-extern "C" EXPORT_API gboolean unity_mono_method_is_generic(MonoMethod* method)
+extern "C" EXPORT_API gboolean EXPORT_CC unity_mono_method_is_generic(MonoMethod* method)
 {
     CONTRACTL{
         PRECONDITION(method != nullptr);
@@ -3467,7 +3470,7 @@ extern "C" EXPORT_API gboolean unity_mono_method_is_generic(MonoMethod* method)
     return method_clr->IsGenericMethodDefinition() ? TRUE : FALSE;
 }
 
-extern "C" EXPORT_API gboolean unity_mono_method_is_inflated(MonoMethod* method)
+extern "C" EXPORT_API gboolean EXPORT_CC unity_mono_method_is_inflated(MonoMethod* method)
 {
     CONTRACTL{
         PRECONDITION(method != nullptr);
@@ -3481,20 +3484,20 @@ extern "C" EXPORT_API gboolean unity_mono_method_is_inflated(MonoMethod* method)
 }
 
 
-extern "C" EXPORT_API MonoMethod* unity_mono_reflection_method_get_method(MonoReflectionMethod* mrf)
+extern "C" EXPORT_API MonoMethod* EXPORT_CC unity_mono_reflection_method_get_method(MonoReflectionMethod* mrf)
 {
     return (MonoMethod*)((ReflectMethodObject*)mrf)->GetMethod();
 }
 
 #ifdef _DEBUG
-extern "C" void mono_debug_assert_dialog(const char *szFile, int iLine, const char *szExpr)
+extern "C" void EXPORT_CC mono_debug_assert_dialog(const char *szFile, int iLine, const char *szExpr)
 {
     DbgAssertDialog(szFile, iLine, szExpr);
 }
 #endif
 
 
-extern "C" EXPORT_API void mono_unity_domain_unload(MonoDomain * domain, MonoUnityExceptionFunc callback)
+extern "C" EXPORT_API void EXPORT_CC mono_unity_domain_unload(MonoDomain * domain, MonoUnityExceptionFunc callback)
 {
     TRACE_API("%p %p", domain, callback);
     
@@ -3513,12 +3516,12 @@ extern "C" EXPORT_API void mono_unity_domain_unload(MonoDomain * domain, MonoUni
 // we don't actually bother with detaching and attaching the thread at all. However,
 // we need to make sure we leave GC in preemptive modewhen detaching, so the thread
 // can be suspended by the GC at any point.
-extern "C" EXPORT_API void mono_unity_thread_fast_attach (MonoDomain * domain)
+extern "C" EXPORT_API void EXPORT_CC mono_unity_thread_fast_attach (MonoDomain * domain)
 {
     gCurrentDomain = domain;
 }
 
-extern "C" EXPORT_API void mono_unity_thread_fast_detach ()
+extern "C" EXPORT_API void EXPORT_CC mono_unity_thread_fast_detach ()
 {
     gCurrentDomain = NULL;
     GetThread()->EnablePreemptiveGC();
@@ -3526,7 +3529,7 @@ extern "C" EXPORT_API void mono_unity_thread_fast_detach ()
 
 
 
-extern "C" EXPORT_API MonoMethodSignature* mono_method_signature_checked (MonoMethod * method, MonoError * error)
+extern "C" EXPORT_API MonoMethodSignature* EXPORT_CC mono_method_signature_checked (MonoMethod * method, MonoError * error)
 {
     return (MonoMethodSignature*)method;
 }
@@ -3538,20 +3541,20 @@ typedef void(*MonoUnityExceptionFunc) (MonoObject* exc);
 struct MonoMethodDesc;
 typedef void (*MonoDebuggerAttachFunc)(gboolean attached);
 
-extern "C" EXPORT_API void mono_debugger_set_generate_debug_info (gboolean enable)
+extern "C" EXPORT_API void EXPORT_CC mono_debugger_set_generate_debug_info (gboolean enable)
 {
 }
 
-extern "C" EXPORT_API void mono_debugger_install_attach_detach_callback (MonoDebuggerAttachFunc func)
+extern "C" EXPORT_API void EXPORT_CC mono_debugger_install_attach_detach_callback (MonoDebuggerAttachFunc func)
 {
 }
 
-extern "C" EXPORT_API gint32 mono_error_ok (MonoError * error)
+extern "C" EXPORT_API gint32 EXPORT_CC mono_error_ok (MonoError * error)
 {
     return true;
 }
 
-extern "C" EXPORT_API void mono_error_init (MonoError * error)
+extern "C" EXPORT_API void EXPORT_CC mono_error_init (MonoError * error)
 {
 
 }
