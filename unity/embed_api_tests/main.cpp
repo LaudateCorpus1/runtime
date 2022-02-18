@@ -2328,11 +2328,21 @@ void SetupMono(Mode mode)
         g_monoDllPath = "../../bin/Product/Linux.x64.Debug/libcoreclr.so";
 #elif defined(WIN32)
 #if defined(_DEBUG)
+#ifdef _M_AMD64
         monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x64/Debug/runtimes/win-x64/lib/net7.0");
         g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x64/Debug/runtimes/win-x64/native/coreclr.dll");
 #else
+        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x86/Debug/runtimes/win-x86/lib/net7.0");
+        g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x86/Debug/runtimes/win-x86/native/coreclr.dll");
+#endif
+#else
+#ifdef _M_AMD64
         monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x64/Release/runtimes/win-x64/lib/net7.0");
         g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x64/Release/runtimes/win-x64/native/coreclr.dll");
+#else
+        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x86/Release/runtimes/win-x86/lib/net7.0");
+        g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x86/Release/runtimes/win-x86/native/coreclr.dll");
+#endif
 #endif
 #else
         printf("Unsupported platform\n");
