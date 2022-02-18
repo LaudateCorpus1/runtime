@@ -32,6 +32,6 @@ triggers:
           - "unity-main"
 
 artifacts: 
-  win64:
+  win32:
     paths:
       - artifacts\unity\dotnet-runtime-unity-win-x86.7z
