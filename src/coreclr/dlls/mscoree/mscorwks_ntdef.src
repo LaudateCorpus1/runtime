@@ -97,7 +97,9 @@ EXPORTS
         mono_debug_free_source_location
         mono_debug_init
         mono_debug_lookup_source_location
-        mono_debug_open_image_from_memory
+        mono_debug_open_image_from_memory  
+        mono_debugger_install_attach_detach_callback
+        mono_debugger_set_generate_debug_info
         mono_dl_fallback_register
         mono_dl_fallback_unregister
         mono_dllmap_insert
@@ -109,6 +111,11 @@ EXPORTS
         mono_domain_set
         mono_domain_unload
         mono_enter_internal_call
+        mono_error_cleanup
+        mono_error_get_error_code
+        mono_error_get_message
+        mono_error_init
+        mono_error_ok
         mono_exception_from_name_msg
         mono_exception_from_name_two_strings
         mono_exit_internal_call
@@ -187,6 +194,7 @@ EXPORTS
         mono_method_get_name
         mono_method_get_object
         mono_method_signature
+        mono_method_signature_checked
         mono_method_signature_checked_slow
         mono_object_get_class
         mono_object_get_size
@@ -198,12 +206,14 @@ EXPORTS
         mono_object_unbox
         mono_parse_default_optimizations
         mono_pmip
+        mono_profiler_create
         mono_profiler_install
         mono_profiler_install_allocation
         mono_profiler_install_enter_leave
         mono_profiler_install_gc
         mono_profiler_install_jit_end
         mono_profiler_install_thread
+        mono_profiler_load
         mono_profiler_set_events
         mono_property_get_get_method
         mono_raise_exception
